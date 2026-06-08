@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "恢复平静治疗室",
+    "slug": "calm-therapy-room",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F5F0"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.calmtherapy"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#F7F5F0"
+      },
+      "package": "com.yourcompany.calmtherapy"
+    },
+    "plugins": [
+      "expo-audio"
+    ]
+  }
+}
