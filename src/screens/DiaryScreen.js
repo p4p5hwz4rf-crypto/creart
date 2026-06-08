@@ -293,9 +293,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 40,
     padding: SPACING.lg,
-    ...SHADOWS.small,
+    ...SHADOWS.figmaCard,
     borderWidth: 1,
-    borderColor: 'rgba(114,121,115,0.06)',
+    borderColor: 'rgba(194,200,194,0.1)',
     marginBottom: SPACING.xl,
   },
   weekRow: {
@@ -381,9 +381,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 24,
     padding: SPACING.lg,
-    ...SHADOWS.small,
+    ...SHADOWS.figmaCard,
     borderWidth: 1,
-    borderColor: 'rgba(114,121,115,0.08)',
+    borderColor: 'rgba(194,200,194,0.1)',
   },
   bubbleText: {
     fontSize: 15,

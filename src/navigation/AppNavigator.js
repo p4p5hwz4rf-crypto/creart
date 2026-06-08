@@ -33,13 +33,16 @@ function TabIcon({ focused, routeName }) {
   if (!config) return null;
 
   const iconName = focused ? config.icon : config.inactiveIcon;
+  // Figma 规范：Profile 页面活跃态用 primary 深绿，其他页面用 primaryFixed 浅绿
+  const activeBg = routeName === 'Profile' ? COLORS.primary : COLORS.primaryFixed;
+  const activeIconColor = routeName === 'Profile' ? COLORS.onPrimary : COLORS.onPrimaryFixedVariant;
 
   return (
-    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
+    <View style={[styles.tabItem, focused && { backgroundColor: activeBg, ...SHADOWS.small }]}>
       <MaterialIcons
         name={iconName}
         size={22}
-        color={focused ? COLORS.onPrimaryFixedVariant : COLORS.onSurfaceVariant}
+        color={focused ? activeIconColor : COLORS.onSurfaceVariant}
         style={{ opacity: focused ? 1 : 0.5 }}
       />
     </View>
@@ -81,7 +84,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderTopLeftRadius: RADIUS.xxl,
     borderTopRightRadius: RADIUS.xxl,
-    ...SHADOWS.ambient,
+    ...SHADOWS.figmaTabBar,
     paddingHorizontal: 40,
     paddingBottom: 12,
     elevation: 0,
@@ -94,9 +97,5 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: RADIUS.full,
-  },
-  tabItemActive: {
-    backgroundColor: COLORS.primaryFixed,
-    ...SHADOWS.small,
   },
 });

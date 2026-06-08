@@ -107,7 +107,7 @@ export const SPACING = {
   gutter: 16,
 };
 
-// 柔和、弥散的环境阴影（tinted with primary sage，低 opacity）
+// Figma 精确阴影规范（Serene Harmony）
 export const SHADOWS = {
   small: {
     shadowColor: '#466253',
@@ -136,6 +136,49 @@ export const SHADOWS = {
     shadowOpacity: 0.08,
     shadowRadius: 40,
     elevation: 8,
+  },
+  // Figma 精确阴影
+  figmaCard: {
+    shadowColor: '#466253',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.08,
+    shadowRadius: 40,
+    elevation: 4,
+  },
+  figmaAvatar: {
+    shadowColor: '#426169',
+    shadowOffset: { width: 0, height: 40 },
+    shadowOpacity: 0.1,
+    shadowRadius: 80,
+    elevation: 6,
+  },
+  figmaTabBar: {
+    shadowColor: '#466253',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 40,
+    elevation: 4,
+  },
+  figmaTabBarStrong: {
+    shadowColor: '#426169',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    elevation: 4,
+  },
+  figmaButton: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 4,
+  },
+  figmaGlow: {
+    shadowColor: '#466253',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 4,
   },
 };
 

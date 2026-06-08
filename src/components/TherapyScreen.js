@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-    ...SHADOWS.small,
+    ...SHADOWS.figmaCard,
   },
   modeImageWrapActive: {
     borderWidth: 2,
@@ -450,9 +450,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.ambient,
+    ...SHADOWS.figmaCard,
     borderWidth: 1,
-    borderColor: 'rgba(114,121,115,0.06)',
+    borderColor: 'rgba(194,200,194,0.1)',
     zIndex: 2,
   },
   timerButtonText: {
@@ -503,7 +503,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryFixed,
     borderWidth: 2,
     borderColor: '#fff',
-    ...SHADOWS.small,
+    ...SHADOWS.figmaButton,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   soundDot: {
     width: 4,

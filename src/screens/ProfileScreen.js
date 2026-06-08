@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     borderWidth: 4,
     borderColor: COLORS.surfaceContainerHighest,
-    ...SHADOWS.ambient,
+    ...SHADOWS.figmaAvatar,
   },
   editBadge: {
     position: 'absolute',
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: RADIUS.full,
-    ...SHADOWS.small,
+    ...SHADOWS.figmaAvatar,
   },
   chipText: {
     fontSize: 13,
@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     padding: 8,
     borderWidth: 1,
-    borderColor: 'rgba(73,100,85,0.05)',
-    ...SHADOWS.small,
+    borderColor: 'rgba(70,98,83,0.05)',
+    ...SHADOWS.figmaCard,
   },
   menuItem: {
     flexDirection: 'row',
