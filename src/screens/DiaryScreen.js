@@ -8,7 +8,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, SPACING, SHADOWS, RADIUS, FONT } from '../theme';
 import { getDiaryEntries, saveDiaryEntry } from '../storage';
 
-const WEEK_DAYS = ['S','M','T','W','T','F','S'];
+const WEEK_DAYS = ['日','一','二','三','四','五','六'];
 const AVATAR_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0NgM7TiEvrukEVuVY5ylj7xMP76FFVHqwJjLfCNqRJt6fZZmC-Gw9jyO4lsWcyGjrONS4_GydYu0qXv_I2LFt-pg127qS4F8S08P74eRv2VMYDqlS5lqm4zWlfwAI04RiUVWtMMeNjlKQ1k0S20U7QqqgN-oR9OO_Siflxbm-VBPJsICiZKpTRsI4HHjcCOo0zWCf5QfwblCQgXsw85rxrWk_JDO_C4ksu9oHUcv91Q5eVgWjQ8fujSXTiHNbB-x3KFV9X9OIGQ';
 
 export default function DiaryScreen() {
@@ -73,7 +73,7 @@ export default function DiaryScreen() {
         <View style={styles.header}>
           <View style={styles.logoRow}>
             <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-            <Text style={styles.logoText}>Digital Sanctuary</Text>
+            <Text style={styles.logoText}>数字静修所</Text>
           </View>
           <TouchableOpacity activeOpacity={0.7}>
             <MaterialIcons name="search" size={22} color={COLORS.onSurfaceVariant} />
@@ -89,7 +89,7 @@ export default function DiaryScreen() {
             <Text style={styles.monthText}>
               {new Date(year, month).toLocaleString('en-US', { month: 'long' })} {year}
             </Text>
-            <Text style={styles.monthSub}>Yearly Overview</Text>
+            <Text style={styles.monthSub}>年度概览</Text>
           </View>
           <TouchableOpacity onPress={nextMonth} style={styles.arrowBtn} activeOpacity={0.7}>
             <MaterialIcons name="chevron-right" size={22} color={COLORS.onSurfaceVariant} />
@@ -143,7 +143,7 @@ export default function DiaryScreen() {
 
         {/* Yesterday's Happiness */}
         <View style={styles.yesterdaySection}>
-          <Text style={styles.sectionTitle}>Yesterday's Happiness</Text>
+          <Text style={styles.sectionTitle}>昨日幸福</Text>
           <View style={styles.yesterdayRow}>
             <Image source={{ uri: AVATAR_URL }} style={styles.yesterdayAvatar} />
             <View style={styles.bubbleCard}>
@@ -164,10 +164,10 @@ export default function DiaryScreen() {
           <View style={styles.infoCardTertiary}>
             <View>
               <MaterialIcons name="cloud-queue" size={32} color={COLORS.onTertiaryFixedVariant} style={{ opacity: 0.5, marginBottom: SPACING.sm }} />
-              <Text style={styles.infoCardTitle}>Current Mood</Text>
+              <Text style={styles.infoCardTitle}>当下心情</Text>
             </View>
             <View style={styles.infoCardLabelRow}>
-              <Text style={styles.infoCardLabel}>TRANQUIL</Text>
+              <Text style={styles.infoCardLabel}>宁静</Text>
               <View style={styles.pulseDot} />
             </View>
             {/* 背景光晕 */}
@@ -176,9 +176,9 @@ export default function DiaryScreen() {
           <View style={styles.infoCardSecondary}>
             <View>
               <MaterialIcons name="auto-awesome" size={32} color={COLORS.onSecondaryFixedVariant} style={{ opacity: 0.5, marginBottom: SPACING.sm }} />
-              <Text style={styles.infoCardTitle}>Focus Goal</Text>
+              <Text style={styles.infoCardTitle}>专注目标</Text>
             </View>
-            <Text style={styles.infoCardLabel}>MINDFUL PRESENCE</Text>
+            <Text style={styles.infoCardLabel}>正念临在</Text>
             <View style={styles.cardGlow} />
           </View>
         </View>

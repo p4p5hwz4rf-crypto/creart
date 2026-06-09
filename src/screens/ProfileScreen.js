@@ -129,7 +129,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.headerInner}>
             <View style={styles.logoRow}>
               <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-              <Text style={styles.logoText}>Digital Sanctuary</Text>
+              <Text style={styles.logoText}>数字静修所</Text>
             </View>
             <TouchableOpacity activeOpacity={0.7}>
               <MaterialIcons name="more-vert" size={22} color={COLORS.onSurfaceVariant} />
@@ -171,12 +171,12 @@ export default function ProfileScreen({ navigation }) {
               <Text style={styles.name}>{user?.name || '用户'}</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.subtitle}>Seeking stillness since 2022</Text>
+          <Text style={styles.subtitle}>自2022年，寻找内心的宁静</Text>
         </View>
 
         {/* 今年目标 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Year's Goals</Text>
+          <Text style={styles.sectionTitle}>今年目标</Text>
           <View style={styles.chipRow}>
             {goals.map((g) => (
               <View key={g} style={styles.chip}>
@@ -204,16 +204,16 @@ export default function ProfileScreen({ navigation }) {
 
         {/* 菜单列表 */}
         <View style={styles.menuCard}>
-          <MenuItem icon="chat-bubble-outline" label="Feedback" onPress={() => setFeedbackVisible(true)} />
+          <MenuItem icon="chat-bubble-outline" label="意见反馈" onPress={() => setFeedbackVisible(true)} />
           <View style={styles.menuDivider} />
           <MenuItem
             icon="settings"
-            label="Subscription"
+            label="订阅会员"
             onPress={() => { if (!subStatus?.isActive) setPayVisible(true); }}
-            badge={subStatus?.isActive ? 'Active' : null}
+            badge={subStatus?.isActive ? '已激活' : null}
           />
           <View style={styles.menuDivider} />
-          <MenuItem icon="library-books" label="Records" badge="12 entries" onPress={() => setReportVisible(true)} />
+          <MenuItem icon="library-books" label="使用记录" badge="12条记录" onPress={() => setReportVisible(true)} />
         </View>
 
         {/* 退出登录 */}

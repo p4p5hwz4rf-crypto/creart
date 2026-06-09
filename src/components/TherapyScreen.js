@@ -28,18 +28,18 @@ const MODE_IMAGES = {
 };
 
 const MODE_LABELS = {
-  [MODES.MEDITATION]: 'Inner Peace',
-  [MODES.NATURE]: 'Forest Path',
-  [MODES.WHITE_NOISE]: 'Deep Ocean',
-  [MODES.BREATHING]: 'Breath',
-  [MODES.BOWL]: 'Bowl',
+  [MODES.MEDITATION]: '内在平静',
+  [MODES.NATURE]: '森林小径',
+  [MODES.WHITE_NOISE]: '深海',
+  [MODES.BREATHING]: '呼吸',
+  [MODES.BOWL]: '颂钵',
   [MODES.ASMR]: 'ASMR',
 };
 
 const NATURE_VARIANTS = [
-  { key: 'forest', label: 'Forest', icon: 'park' },
-  { key: 'rain', label: 'Rain', icon: 'water-drop' },
-  { key: 'waves', label: 'Waves', icon: 'waves' },
+  { key: 'forest', label: '森林', icon: 'park' },
+  { key: 'rain', label: '雨声', icon: 'water-drop' },
+  { key: 'waves', label: '海浪', icon: 'waves' },
 ];
 
 export default function TherapyScreen() {
@@ -109,7 +109,7 @@ export default function TherapyScreen() {
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
   const startWeekday = firstDay.getDay();
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
   const getDayRecord = (day) => {
     return monthStats[day];
@@ -129,7 +129,7 @@ export default function TherapyScreen() {
             <View style={styles.headerInner}>
               <View style={styles.logoRow}>
                 <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-                <Text style={styles.logoText}>Digital Sanctuary</Text>
+                <Text style={styles.logoText}>数字静修所</Text>
               </View>
               <TouchableOpacity activeOpacity={0.7}>
                 <MaterialIcons name="notifications-none" size={22} color={COLORS.onSurfaceVariant} />
@@ -140,12 +140,12 @@ export default function TherapyScreen() {
           {/* 标题区 */}
           <View style={styles.titleRow}>
             <View>
-              <Text style={styles.greeting}>Restoring Serenity</Text>
-              <Text style={styles.subGreeting}>Embrace the quietude of now</Text>
+              <Text style={styles.greeting}>重拾宁静</Text>
+              <Text style={styles.subGreeting}>拥抱当下的静谧</Text>
             </View>
             <View style={styles.todayBadge}>
               <Text style={styles.todayMinutes}>{todayMinutes}</Text>
-              <Text style={styles.todayLabel}>Today min</Text>
+              <Text style={styles.todayLabel}>今日分钟</Text>
             </View>
           </View>
 
@@ -188,7 +188,7 @@ export default function TherapyScreen() {
                   <MaterialIcons name="add-circle" size={32} color={COLORS.primary} style={{ opacity: 0.4 }} />
                 </View>
               </View>
-              <Text style={styles.modeLabel}>Explore More</Text>
+              <Text style={styles.modeLabel}>探索更多</Text>
             </TouchableOpacity>
           </ScrollView>
 
@@ -206,7 +206,7 @@ export default function TherapyScreen() {
                 color={COLORS.primary}
               />
               <Text style={styles.timerButtonText}>
-                {isActive ? 'RESTING' : 'START'}
+                {isActive ? '休息中' : '开始'}
               </Text>
               {/* 倒计时 */}
               {isActive && (
@@ -215,7 +215,7 @@ export default function TherapyScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-            <Text style={styles.timerCaption}>10 minutes of mindfulness</Text>
+            <Text style={styles.timerCaption}>10分钟正念冥想</Text>
           </View>
 
           {/* 声音切换（仅 Nature 模式） */}

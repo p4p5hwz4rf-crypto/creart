@@ -1,17 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
+import { Asset } from 'expo-asset';
 import { COLORS } from '../theme';
 
 const PRESETS = [5, 10, 15, 30];
+
+// Load audio asset asynchronously to avoid Metro bundling 34MB file inline
+const audioModule = require('../../assets/sounds/gymnopedie.wav');
 
 export default function MeditationPlayer({ active, onComplete, defaultDuration, color, showTimer }) {
   const [durationMin, setDurationMin] = useState(Math.floor(defaultDuration / 60));
   const [remaining, setRemaining] = useState(defaultDuration);
   const [breathPhase, setBreathPhase] = useState('');
+  const [audioUri, setAudioUri] = useState(null);
   const timerRef = useRef(null);
   const breathRef = useRef(null);
-  const player = useAudioPlayer(require('../../assets/sounds/white_noise.wav'));
+  const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+
+  useEffect(() => {
+    const asset = Asset.fromModule(audioModule);
+    asset.downloadAsync().then(() => {
+      setAudioUri(asset.localUri || asset.uri);
+    });
+  }, []);
 
   useEffect(() => {
     if (active) {
