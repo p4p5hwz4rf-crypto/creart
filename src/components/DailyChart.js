@@ -3,21 +3,21 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { COLORS, SPACING } from '../theme';
 
 const MODE_COLORS = {
-  breathing: COLORS.breathing,
-  nature: COLORS.nature,
-  bowl: COLORS.bowl,
+  deep_breathing: COLORS.deep_breathing,
+  nature_sound: COLORS.nature_sound,
+  singing_bowl: COLORS.singing_bowl,
   asmr: COLORS.asmr,
   meditation: COLORS.meditation,
-  whiteNoise: COLORS.whiteNoise,
+  white_noise: COLORS.white_noise,
 };
 
 const MODE_LABELS = {
-  breathing: '呼吸',
-  nature: '自然',
-  bowl: '音钵',
+  deep_breathing: '深呼吸',
+  nature_sound: '自然音',
+  singing_bowl: '音钵',
   asmr: 'ASMR',
   meditation: '冥想',
-  whiteNoise: '专注',
+  white_noise: '专注',
 };
 
 export default function DailyChart({ monthStats }) {

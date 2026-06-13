@@ -1,16 +1,48 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
+import { Asset } from 'expo-asset';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../theme';
 
+const TOTAL_SECONDS = 60;
+const bellModule = require('../../assets/sounds/bell.wav');
+
 export default function BreathingGuide({ active, onComplete, pattern, color }) {
   const [phase, setPhase] = useState('ready');
-  const [countdown, setCountdown] = useState(0);
+  const [phaseCountdown, setPhaseCountdown] = useState(0);
+  const [bellReady, setBellReady] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const timerRef = useRef(null);
   const phaseTimerRef = useRef(null);
-  const player = useAudioPlayer(require('../../assets/sounds/bell.wav'));
+  const sessionTimerRef = useRef(null);
+  const player = useAudioPlayer(bellModule);
+
+  // Preload & cache bell locally for instant phase-change chimes
+  useEffect(() => {
+    let cancelled = false;
+    async function prepare() {
+      // Download to device cache
+      try {
+        const asset = Asset.fromModule(bellModule);
+        await asset.downloadAsync();
+        if (!cancelled && asset.localUri) {
+          try { player.replace({ uri: asset.localUri }); } catch (e) {}
+        }
+      } catch (e) { /* keep using direct require */ }
+      // Warm up: play briefly at zero volume to force native buffer load
+      player.loop = false;
+      player.volume = 0;
+      try { player.play(); } catch (e) {}
+      // Let it play for a tiny moment then pause — buffer is now hot
+      setTimeout(() => {
+        try { player.pause(); } catch (e) {}
+        player.volume = 0.7;
+        if (!cancelled) setBellReady(true);
+      }, 50);
+    }
+    prepare();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (active) {
@@ -22,19 +54,22 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
   }, [active]);
 
   const playBell = () => {
+    if (!bellReady) return;
     try {
-      player.volume = 0.7;
+      // Seek to start for instant attack
+      player.currentTime = 0;
       player.play();
-    } catch (e) { /* ignore */ }
+    } catch (e) {}
   };
 
-  const runPhase = (name, duration, nextPhase, animTo) => {
+  // Use Date.now() reference for precise phase timing (no interval drift)
+  const runPhase = (name, durationSec, nextPhase, animTo) => {
     setPhase(name);
-    setCountdown(duration);
+    setPhaseCountdown(durationSec);
     if (animTo) {
       Animated.timing(scaleAnim, {
         toValue: animTo,
-        duration: duration * 1000,
+        duration: durationSec * 1000,
         easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       }).start();
@@ -42,31 +77,42 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     playBell();
 
-    let remaining = duration;
+    const phaseStart = Date.now();
+    clearInterval(phaseTimerRef.current);
     phaseTimerRef.current = setInterval(() => {
-      remaining -= 1;
-      setCountdown(remaining);
+      const elapsed = Math.floor((Date.now() - phaseStart) / 1000);
+      const remaining = durationSec - elapsed;
       if (remaining <= 0) {
         clearInterval(phaseTimerRef.current);
+        setPhaseCountdown(0);
         nextPhase();
+      } else {
+        setPhaseCountdown(remaining);
       }
-    }, 1000);
+    }, 100); // faster tick for tighter sync with bell
   };
 
   const startSession = () => {
-    let cycles = 0;
-    const maxCycles = 5;
+    const sessionStart = Date.now();
+
+    const checkSessionEnd = () => {
+      const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+      if (elapsed >= TOTAL_SECONDS) {
+        stopSession();
+        onComplete && onComplete(TOTAL_SECONDS);
+        return true;
+      }
+      return false;
+    };
 
     const doCycle = () => {
-      if (!active) return;
-      cycles++;
-      if (cycles > maxCycles) {
-        onComplete && onComplete(60);
-        return;
-      }
+      if (checkSessionEnd()) return;
+
       runPhase('inhale', pattern.inhale, () => {
+        if (checkSessionEnd()) return;
         if (pattern.hold > 0) {
           runPhase('hold', pattern.hold, () => {
+            if (checkSessionEnd()) return;
             runPhase('exhale', pattern.exhale, doCycle, 1);
           });
         } else {
@@ -74,12 +120,20 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
         }
       }, 1.45);
     };
+
+    // Store session timer for cleanup
+    sessionTimerRef.current = setInterval(() => {
+      if (checkSessionEnd()) {
+        clearInterval(sessionTimerRef.current);
+      }
+    }, 250);
+
     doCycle();
   };
 
   const stopSession = () => {
-    clearInterval(timerRef.current);
     clearInterval(phaseTimerRef.current);
+    clearInterval(sessionTimerRef.current);
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: 800,
@@ -87,7 +141,7 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
       useNativeDriver: true,
     }).start();
     setPhase('ready');
-    setCountdown(0);
+    setPhaseCountdown(0);
   };
 
   const phaseText = { ready: '准备', inhale: '吸气', hold: '屏息', exhale: '呼气' };
@@ -96,9 +150,9 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
     <View style={styles.container}>
       <Animated.View style={[styles.circle, { transform: [{ scale: scaleAnim }], borderColor: color }]}>
         <Text style={[styles.phaseText, { color }]}>{phaseText[phase]}</Text>
-        {countdown > 0 && <Text style={styles.countdown}>{countdown}</Text>}
+        {active && phaseCountdown > 0 && <Text style={styles.countdown}>{phaseCountdown}</Text>}
       </Animated.View>
-      <Text style={styles.hint}>跟随圆圈节奏，慢慢呼吸</Text>
+      <Text style={styles.hint}>{active ? '呼吸中' : '跟随圆圈节奏，慢慢呼吸'}</Text>
     </View>
   );
 }

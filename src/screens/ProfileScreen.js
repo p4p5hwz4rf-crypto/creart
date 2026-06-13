@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity, TextInput, Modal, Alert, Linking, Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -12,12 +13,13 @@ import { useSubscription } from '../context/SubscriptionContext';
 import * as ImagePicker from 'expo-image-picker';
 import {
   getGoals, saveGoal, removeGoal, getMonthStats, getMonthTotalTime,
+  getMotto, saveMotto,
 } from '../storage';
 
 const AVATAR_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQ199MwR4pEsOeshKXcVtn4XZxqPiKs7dw9arXFcbShr5rFf0lS78jlFAcJgrY2M4yTtmWWj_QeOgB6gYF3xUxyjrTGxR_xIgpQEvacmPISHG1bmWd-aFzGlpfq6baUGHoGt-bn_lcHwS27I_ls6fz987RsuHWIOfboxFN4N-vCCtAzasqcvpfOoECBjzyQECvBJ7ZWhBhB3r1syO1AN1KZWdwTLVH0A1vSE7WBM3RAEn0RmF7ybczZWIhFqBtVDy8kdUtbmFk9A';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout, updateName } = useAuth();
+  const { user, logout, updateName, updateAvatar } = useAuth();
   const { getSubscriptionStatus, pay } = useSubscription();
   const [nameEditing, setNameEditing] = useState(false);
   const [newName, setNewName] = useState('');
@@ -27,15 +29,18 @@ export default function ProfileScreen({ navigation }) {
   const [reportData, setReportData] = useState(null);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  const [avatar, setAvatar] = useState(null);
   const [subStatus, setSubStatus] = useState(null);
   const [payVisible, setPayVisible] = useState(false);
+  const [motto, setMotto] = useState('');
+  const [mottoEditing, setMottoEditing] = useState(false);
+  const [mottoDraft, setMottoDraft] = useState('');
 
   useFocusEffect(
     useCallback(() => {
-      loadGoals();
-      loadReport();
-      loadSubStatus();
+      loadGoals().catch(() => {});
+      loadReport().catch(() => {});
+      loadSubStatus().catch(() => {});
+      loadMotto().catch(() => {});
     }, [])
   );
 
@@ -55,6 +60,11 @@ export default function ProfileScreen({ navigation }) {
     const days = Object.keys(stats).length;
     const totalMin = Math.floor(total / 60);
     setReportData({ days, totalMin, stats });
+  };
+
+  const loadMotto = async () => {
+    const m = await getMotto();
+    setMotto(m || '');
   };
 
   const handleAddGoal = async () => {
@@ -78,28 +88,46 @@ export default function ProfileScreen({ navigation }) {
 
   const handleFeedback = () => {
     if (!feedbackText.trim()) return;
-    Linking.openURL(`mailto:feedback@calmtherapy.app?subject=意见反馈&body=${encodeURIComponent(feedbackText)}`);
+    Linking.openURL(`mailto:feedback@calmtherapy.app?subject=意见反馈&body=${encodeURIComponent(feedbackText)}`).catch(() => {});
     setFeedbackText('');
     setFeedbackVisible(false);
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
-    if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
+  const handleSaveName = async () => {
+    if (newName.trim()) {
+      await updateName(newName.trim());
     }
+    setNameEditing(false);
+  };
+
+  const handleSaveMotto = async () => {
+    await saveMotto(mottoDraft.trim());
+    setMotto(mottoDraft.trim());
+    setMottoEditing(false);
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        await updateAvatar(uri);
+      }
+    } catch (e) { /* 用户取消或权限拒绝 */ }
   };
 
   const handlePay = async () => {
-    await pay();
-    setPayVisible(false);
-    loadSubStatus();
-    Alert.alert('支付成功', '下个月使用权已解锁！');
+    try {
+      await pay();
+      setPayVisible(false);
+      loadSubStatus();
+      Alert.alert('支付成功', '下个月使用权已解锁！');
+    } catch (e) { /* storage write failed */ }
   };
 
   const MenuItem = ({ icon, label, onPress, badge }) => (
@@ -121,6 +149,8 @@ export default function ProfileScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  const userAvatarUri = user?.avatarUri || AVATAR_URL;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -137,12 +167,12 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </BlurView>
 
-        {/* 头像与名字 */}
+        {/* 头像与名字 — 点击即修改，自动保存 */}
         <View style={styles.profileHeader}>
           <TouchableOpacity onPress={pickImage} activeOpacity={0.9}>
             <View style={styles.avatarWrap}>
               <Image
-                source={{ uri: avatar || AVATAR_URL }}
+                source={{ uri: userAvatarUri }}
                 style={styles.avatarImg}
               />
               <View style={styles.editBadge}>
@@ -157,21 +187,37 @@ export default function ProfileScreen({ navigation }) {
               value={newName}
               onChangeText={setNewName}
               autoFocus
-              onBlur={() => {
-                if (newName.trim()) updateName(newName.trim());
-                setNameEditing(false);
-              }}
-              onSubmitEditing={() => {
-                if (newName.trim()) updateName(newName.trim());
-                setNameEditing(false);
-              }}
+              onBlur={handleSaveName}
+              onSubmitEditing={handleSaveName}
             />
           ) : (
             <TouchableOpacity onPress={() => { setNewName(user?.name || ''); setNameEditing(true); }}>
               <Text style={styles.name}>{user?.name || '用户'}</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.subtitle}>自2022年，寻找内心的宁静</Text>
+
+          {/* Item 8: 可编辑座右铭 */}
+          {mottoEditing ? (
+            <View style={styles.mottoEditRow}>
+              <TextInput
+                style={styles.mottoInput}
+                value={mottoDraft}
+                onChangeText={setMottoDraft}
+                placeholder="输入座右铭..."
+                placeholderTextColor={COLORS.outline}
+                autoFocus
+                onBlur={handleSaveMotto}
+                onSubmitEditing={handleSaveMotto}
+              />
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => { setMottoDraft(motto); setMottoEditing(true); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.subtitle}>{motto || '点击添加座右铭'}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* 今年目标 */}
@@ -277,13 +323,13 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* 反馈弹窗 */}
+      {/* 反馈弹窗 — 无浅色底图 */}
       <Modal visible={feedbackVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>意见反馈</Text>
+          <View style={styles.feedbackContent}>
+            <Text style={styles.feedbackTitle}>意见反馈</Text>
             <TextInput
-              style={styles.modalInput}
+              style={styles.feedbackInput}
               multiline
               placeholder="请描述你遇到的问题或建议..."
               placeholderTextColor={COLORS.outline}
@@ -291,8 +337,8 @@ export default function ProfileScreen({ navigation }) {
               onChangeText={setFeedbackText}
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalSecondaryBtn} onPress={() => setFeedbackVisible(false)}>
-                <Text style={styles.modalSecondaryText}>取消</Text>
+              <TouchableOpacity style={styles.feedbackCancelBtn} onPress={() => setFeedbackVisible(false)}>
+                <Text style={styles.feedbackCancelText}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalPrimaryBtnSmall} onPress={handleFeedback}>
                 <Text style={styles.modalPrimaryText}>发送</Text>
@@ -399,6 +445,22 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: 4,
     opacity: 0.8,
+  },
+  // 座右铭编辑
+  mottoEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  mottoInput: {
+    fontSize: 14,
+    fontFamily: FONT.regular,
+    color: COLORS.onSurface,
+    borderBottomWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    minWidth: 200,
+    textAlign: 'center',
+    paddingBottom: 2,
   },
   // 目标区域
   section: {
@@ -627,6 +689,40 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     textAlignVertical: 'top',
     marginBottom: SPACING.md,
+  },
+  // 反馈弹窗 — 无浅色背景
+  feedbackContent: {
+    backgroundColor: 'transparent',
+    borderRadius: RADIUS.xxl,
+    padding: SPACING.lg,
+  },
+  feedbackTitle: {
+    fontSize: 18,
+    fontFamily: FONT.semiBold,
+    color: '#fff',
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  feedbackInput: {
+    height: 120,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    fontSize: 15,
+    fontFamily: FONT.regular,
+    color: '#fff',
+    textAlignVertical: 'top',
+    marginBottom: SPACING.md,
+  },
+  feedbackCancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  feedbackCancelText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: FONT.medium,
+    opacity: 0.8,
   },
   payDesc: {
     fontSize: 14,

@@ -3,6 +3,8 @@
 
 export const COLORS = {
   // === Serene Harmony 核心色板 ===
+  onSurface: '#161d1b',
+  onSurfaceVariant: '#727973',
   primary: '#466253',
   onPrimary: '#ffffff',
   primaryContainer: '#5f7b6b',
@@ -62,12 +64,12 @@ export const COLORS = {
   textSecondary: '#727973',
   textLight: '#c2c8c2',
   divider: '#e9efec',
-  breathing: '#466253',
-  nature: '#3e6562',
-  bowl: '#426169',
+  deep_breathing: '#466253',
+  nature_sound: '#3e6562',
+  singing_bowl: '#426169',
   asmr: '#5b7982',
   meditation: '#466253',
-  whiteNoise: '#bee8e4',
+  white_noise: '#bee8e4',
   accent: '#5f7b6b',
 };
 
@@ -201,10 +203,10 @@ export const EASINGS = {
 };
 
 export const MODE_GRADIENTS = {
-  breathing: ['#7EB5A6', '#9BCFC3'],
-  nature: ['#A8C686', '#C2D9A5'],
-  bowl: ['#B8A9C9', '#D4C9E1'],
+  deep_breathing: ['#7EB5A6', '#9BCFC3'],
+  nature_sound: ['#A8C686', '#C2D9A5'],
+  singing_bowl: ['#B8A9C9', '#D4C9E1'],
   asmr: ['#8FA3BF', '#B3C4D9'],
   meditation: ['#D4A373', '#E4C19F'],
-  whiteNoise: ['#A0C4C8', '#BDD9DC'],
+  white_noise: ['#A0C4C8', '#BDD9DC'],
 };

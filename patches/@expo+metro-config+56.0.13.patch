@@ -1,0 +1,40 @@
+diff --git a/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js b/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js
+index d265b88..dd8efb3 100644
+--- a/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js
++++ b/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js
+@@ -575,6 +575,19 @@ async function transform(config, projectRoot, filename, data, options) {
+         projectRoot,
+         options,
+     };
++    // PATCHED: Check asset/json type BEFORE converting to string, because
++    // large binary assets (e.g. 600MB .wav files) exceed Node's max string length.
++    // The asset transformer reads from disk and does NOT use `file.code`,
++    // so we pass an empty string to avoid the crash.
++    if (options.type === 'asset') {
++        const file = {
++            filename,
++            inputFileSize: data.length,
++            code: '',
++            type: options.type,
++        };
++        return transformAsset(file, context);
++    }
+     const sourceCode = data.toString('utf8');
+     const { unstable_dependencyMapReservedName } = config;
+     if (unstable_dependencyMapReservedName != null) {
+@@ -595,15 +608,6 @@ async function transform(config, projectRoot, filename, data, options) {
+         };
+         return transformJSON(jsonFile, context);
+     }
+-    if (options.type === 'asset') {
+-        const file = {
+-            filename,
+-            inputFileSize: data.length,
+-            code: sourceCode,
+-            type: options.type,
+-        };
+-        return transformAsset(file, context);
+-    }
+     const file = {
+         filename,
+         inputFileSize: data.length,

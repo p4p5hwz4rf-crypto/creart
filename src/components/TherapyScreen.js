@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  SafeAreaView, Image,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,58 +15,109 @@ import NatureSound from './NatureSound';
 import BowlSound from './BowlSound';
 import ASMRPlayer from './ASMRPlayer';
 import MeditationPlayer from './MeditationPlayer';
-import { getTodayStats, addUsageTime, getMonthStats } from '../storage';
+import { getTodayStats, addUsageTime } from '../storage';
+
+const focusAudio = require('../../assets/sounds/gymnopedie_focus.mp3');
 
 const MODE_LIST = [
-  MODES.MEDITATION, MODES.NATURE, MODES.WHITE_NOISE,
-  MODES.BREATHING, MODES.BOWL, MODES.ASMR,
+  MODES.DEEP_BREATHING, MODES.NATURE_SOUND, MODES.SINGING_BOWL,
+  MODES.ASMR, MODES.MEDITATION, MODES.WHITE_NOISE,
 ];
 
 const MODE_IMAGES = {
   [MODES.MEDITATION]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzoi6RZKWOlUNloKRliuyhAZSXdlaHWrtUGf6cSEugcgsAqYxPoJ6kFpdhLeejiDAZiV1L2V4OZ1SYjsawvV00PwoTJXq6i3U_t8QMYFojNfI5CaYeJdocsxyjNsj4roH7_NKdZ-i2YeMnPkxyPiGo83bgP_1G0UV_i03dbZoP2yI_YJ_iLeaqEEd_L5EGz0g0rziUCfKmSawB1IOVDNSDM5rsR9wxYHV5lnk_8HwINxxGj76uDuwwvR0CLNStHs1OsXwD4EBVaA',
-  [MODES.NATURE]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAuOxODjOp5SP62iCcxdJRdA6QyXLFutgRs7DZOjPVbF7l3g4jVrMGUQ1pFs8mt6TLOmv9AqwiqLD-4lLtwJh5g2OMW7PyCj-i-2vNTn5Xw9d6zUfR2WJiMIc5Hy4nRSbKmbx4qHy_WCxW1yElZOBIA3KJ8ARgr-4h_kM1P2sduGfxnNIAHHcakO37EuylKbb8kApynZXBGgbMN9Wrg2nOnI00Nz-ocPvnePAH_eBykJ8VE9SUO_RVekMD16cfk-nIsFzEegd-zRQ',
+  [MODES.NATURE_SOUND]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAuOxODjOp5SP62iCcxdJRdA6QyXLFutgRs7DZOjPVbF7l3g4jVrMGUQ1pFs8mt6TLOmv9AqwiqLD-4lLtwJh5g2OMW7PyCj-i-2vNTn5Xw9d6zUfR2WJiMIc5Hy4nRSbKmbx4qHy_WCxW1yElZOBIA3KJ8ARgr-4h_kM1P2sduGfxnNIAHHcakO37EuylKbb8kApynZXBGgbMN9Wrg2nOnI00Nz-ocPvnePAH_eBykJ8VE9SUO_RVekMD16cfk-nIsFzEegd-zRQ',
   [MODES.WHITE_NOISE]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYNgU4Ch8PVlKsi9u1FD9Zbuc8inviBI60FOBm5UF9uUFTTdARa6PqG2XO1H0bubydStq27Xiiu7Us15Grpzb03ETgzoYsJd4lP6BjZ6sAYPvpzc8YmNKtoGnqjA-iStjc3AC_jkvf0lw0R02xCGoNr1JZxpi9p5OjtkRD0CajRtCixsa0lolVxbT_fT2GXQxNnMgivGi03w_KU1FjNUZZh_wqjsrp0PeS97odAE1yNcfTeVwBBF-LdHKCwCUrZIyxqTYjHYhTTg',
 };
 
 const MODE_LABELS = {
-  [MODES.MEDITATION]: '内在平静',
-  [MODES.NATURE]: '森林小径',
-  [MODES.WHITE_NOISE]: '深海',
-  [MODES.BREATHING]: '呼吸',
-  [MODES.BOWL]: '颂钵',
+  [MODES.DEEP_BREATHING]: '深呼吸',
+  [MODES.NATURE_SOUND]: '自然音',
+  [MODES.SINGING_BOWL]: '音钵',
   [MODES.ASMR]: 'ASMR',
+  [MODES.MEDITATION]: '冥想',
+  [MODES.WHITE_NOISE]: '专注',
 };
-
-const NATURE_VARIANTS = [
-  { key: 'forest', label: '森林', icon: 'park' },
-  { key: 'rain', label: '雨声', icon: 'water-drop' },
-  { key: 'waves', label: '海浪', icon: 'waves' },
-];
-
 export default function TherapyScreen() {
   const [selectedMode, setSelectedMode] = useState(MODES.MEDITATION);
   const [isActive, setIsActive] = useState(false);
   const [todayStats, setTodayStats] = useState({});
-  const [monthStats, setMonthStats] = useState({});
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [natureVariant, setNatureVariant] = useState(1); // default rain
+  const [natureSubMode, setNatureSubMode] = useState('rain');
+  const [buttonCountdown, setButtonCountdown] = useState(0);
+  const [selectedDuration, setSelectedDuration] = useState(0);
+  const countdownRef = useRef(null);
+  const completedRef = useRef(false); // prevent double-counting
 
   useFocusEffect(
     useCallback(() => {
       getTodayStats().then(setTodayStats);
-      getMonthStats(currentMonth).then(setMonthStats);
-    }, [isActive, currentMonth])
+    }, [isActive])
   );
 
   const config = MODE_CONFIG[selectedMode];
 
+  // Sync selectedDuration on mode switch
+  useEffect(() => {
+    setSelectedDuration(config.defaultDuration);
+  }, [selectedMode]);
+
+  // Item 2: 精确倒计时，1秒刷新（Date.now() 基准，无漂移）
+  useEffect(() => {
+    if (isActive) {
+      const total = selectedDuration || config.defaultDuration;
+      const startTime = Date.now();
+      setButtonCountdown(total);
+      countdownRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = total - elapsed;
+        if (remaining <= 0) {
+          clearInterval(countdownRef.current);
+          setButtonCountdown(0);
+          // Item 1: 时长到了自动停止音频
+          setIsActive(false);
+          handleComplete(total);
+        } else {
+          setButtonCountdown(remaining);
+        }
+      }, 1000);
+    } else {
+      clearInterval(countdownRef.current);
+      setButtonCountdown(0);
+    }
+    return () => clearInterval(countdownRef.current);
+  }, [isActive, selectedDuration, config.defaultDuration]);
+
   const handleToggle = () => {
+    if (isActive) {
+      // Pausing: record elapsed time
+      const total = selectedDuration || config.defaultDuration;
+      const elapsed = total - buttonCountdown;
+      if (elapsed > 0) {
+        addUsageTime(selectedMode, elapsed);
+        getTodayStats().then(setTodayStats);
+      }
+    } else {
+      // Starting new session: reset completion guard
+      completedRef.current = false;
+    }
     setIsActive(prev => !prev);
   };
 
+  const handleModeChange = (modeKey) => {
+    if (modeKey === selectedMode) return;
+    if (isActive) {
+      const total = selectedDuration || config.defaultDuration;
+      const elapsed = total - buttonCountdown;
+      if (elapsed > 0) addUsageTime(selectedMode, elapsed);
+    }
+    setSelectedMode(modeKey);
+  };
+
   const handleComplete = (seconds) => {
+    if (completedRef.current) return;
+    completedRef.current = true;
     setIsActive(false);
-    addUsageTime(selectedMode, seconds || config.defaultDuration);
+    addUsageTime(selectedMode, seconds || selectedDuration || config.defaultDuration);
     getTodayStats().then(setTodayStats);
   };
 
@@ -76,44 +128,33 @@ export default function TherapyScreen() {
       color: config.color,
     };
     switch (selectedMode) {
-      case MODES.BREATHING:
+      case MODES.DEEP_BREATHING:
         return <BreathingGuide {...commonProps} pattern={config.breathePattern} />;
-      case MODES.NATURE:
+      case MODES.NATURE_SOUND:
         return (
           <NatureSound
             {...commonProps}
             defaultDuration={config.defaultDuration}
-            variantIndex={natureVariant}
+            subMode={natureSubMode}
           />
         );
-      case MODES.BOWL:
+      case MODES.SINGING_BOWL:
         return <BowlSound {...commonProps} defaultDuration={config.defaultDuration} />;
       case MODES.ASMR:
-        return <ASMRPlayer {...commonProps} defaultDuration={config.defaultDuration} allowLoop />;
+        return <ASMRPlayer {...commonProps} duration={selectedDuration} onDurationChange={setSelectedDuration} allowLoop />;
       case MODES.MEDITATION:
-        return <MeditationPlayer {...commonProps} defaultDuration={config.defaultDuration} />;
+        return <MeditationPlayer {...commonProps} duration={selectedDuration} onDurationChange={setSelectedDuration} />;
       case MODES.WHITE_NOISE:
-        return <MeditationPlayer {...commonProps} defaultDuration={config.defaultDuration} showTimer />;
+        return <MeditationPlayer {...commonProps} duration={selectedDuration} onDurationChange={setSelectedDuration} showTimer audioSource={focusAudio} />;
       default:
         return null;
     }
   };
 
   const todayTotal = Object.values(todayStats).reduce((a, b) => a + b, 0);
-  const todayMinutes = Math.floor(todayTotal / 60);
-
-  // 日历数据
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  const startWeekday = firstDay.getDay();
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-
-  const getDayRecord = (day) => {
-    return monthStats[day];
-  };
+  const totalDuration = selectedDuration || config.defaultDuration;
+  const liveElapsed = isActive ? totalDuration - buttonCountdown : 0;
+  const liveTodaySeconds = todayTotal + liveElapsed;
 
   return (
     <LinearGradient
@@ -131,9 +172,8 @@ export default function TherapyScreen() {
                 <MaterialIcons name="spa" size={20} color={COLORS.primary} />
                 <Text style={styles.logoText}>数字静修所</Text>
               </View>
-              <TouchableOpacity activeOpacity={0.7}>
-                <MaterialIcons name="notifications-none" size={22} color={COLORS.onSurfaceVariant} />
-              </TouchableOpacity>
+
+
             </View>
           </BlurView>
 
@@ -144,7 +184,7 @@ export default function TherapyScreen() {
               <Text style={styles.subGreeting}>拥抱当下的静谧</Text>
             </View>
             <View style={styles.todayBadge}>
-              <Text style={styles.todayMinutes}>{todayMinutes}</Text>
+              <Text style={styles.todayMinutes}>{Math.floor(liveTodaySeconds / 60)}:{String(liveTodaySeconds % 60).padStart(2, '0')}</Text>
               <Text style={styles.todayLabel}>今日分钟</Text>
             </View>
           </View>
@@ -162,7 +202,7 @@ export default function TherapyScreen() {
                 <TouchableOpacity
                   key={modeKey}
                   activeOpacity={0.85}
-                  onPress={() => { if (!isActive) setSelectedMode(modeKey); }}
+                  onPress={() => handleModeChange(modeKey)}
                   style={styles.modeCardWrap}
                 >
                   <View style={[styles.modeImageWrap, active && styles.modeImageWrapActive]}>
@@ -194,7 +234,6 @@ export default function TherapyScreen() {
 
           {/* 计时器区域 */}
           <View style={styles.timerSection}>
-            <View style={styles.timerGlow} />
             <TouchableOpacity
               activeOpacity={0.95}
               onPress={handleToggle}
@@ -206,37 +245,38 @@ export default function TherapyScreen() {
                 color={COLORS.primary}
               />
               <Text style={styles.timerButtonText}>
-                {isActive ? '休息中' : '开始'}
+                {isActive ? '暂停' : '开始'}
               </Text>
-              {/* 倒计时 */}
-              {isActive && (
+              {/* 倒计时 — 只在按下开始后显示实时计时 */}
+              {isActive && buttonCountdown > 0 && (
                 <Text style={styles.timerCountdown}>
-                  {Math.floor(config.defaultDuration / 60)}:00
+                  {Math.floor(buttonCountdown / 60)}:{String(buttonCountdown % 60).padStart(2, '0')}
                 </Text>
               )}
             </TouchableOpacity>
-            <Text style={styles.timerCaption}>10分钟正念冥想</Text>
+            <Text style={styles.timerCaption}>{config.description}</Text>
           </View>
 
-          {/* 声音切换（仅 Nature 模式） */}
-          {selectedMode === MODES.NATURE && (
+          {/* 子模式选择器（仅 Nature 模式） */}
+          {selectedMode === MODES.NATURE_SOUND && config.subModes && (
             <View style={styles.soundRow}>
-              {NATURE_VARIANTS.map((v, idx) => {
-                const active = natureVariant === idx;
+              {config.subModes.map((sm) => {
+                const active = natureSubMode === sm.key;
                 return (
                   <TouchableOpacity
-                    key={v.key}
+                    key={sm.key}
                     activeOpacity={0.8}
-                    onPress={() => { if (!isActive) setNatureVariant(idx); }}
+                    onPress={() => { setNatureSubMode(sm.key); }}
                     style={styles.soundWrap}
                   >
                     <View style={[styles.soundBtn, active && styles.soundBtnActive]}>
                       <MaterialIcons
-                        name={v.icon}
+                        name={sm.icon}
                         size={active ? 24 : 20}
                         color={active ? COLORS.primary : COLORS.onSurfaceVariant}
                       />
                     </View>
+                    <Text style={[styles.soundLabel, active && styles.soundLabelActive]}>{sm.label}</Text>
                     <View style={[styles.soundDot, active && styles.soundDotActive]} />
                   </TouchableOpacity>
                 );
@@ -249,48 +289,6 @@ export default function TherapyScreen() {
             {renderPlayer()}
           </View>
 
-          {/* 音疗日历 */}
-          <View style={styles.calendarSection}>
-            <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() => setCurrentMonth(new Date(year, month - 1, 1))}
-                style={styles.calArrowBtn}
-              >
-                <MaterialIcons name="chevron-left" size={20} color={COLORS.onSurfaceVariant} />
-              </TouchableOpacity>
-              <Text style={styles.calTitle}>{year}年{month + 1}月 音疗记录</Text>
-              <TouchableOpacity
-                onPress={() => setCurrentMonth(new Date(year, month + 1, 1))}
-                style={styles.calArrowBtn}
-              >
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.weekRow}>
-              {weekDays.map(d => <Text key={d} style={styles.weekDay}>{d}</Text>)}
-            </View>
-            <View style={styles.daysGrid}>
-              {Array.from({ length: startWeekday }).map((_, i) => (
-                <View key={`e${i}`} style={styles.calDay} />
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1;
-                const record = getDayRecord(day);
-                const hasRecord = !!record;
-                const totalMin = hasRecord
-                  ? Math.floor(Object.values(record).reduce((a, b) => a + b, 0) / 60)
-                  : 0;
-                return (
-                  <View key={day} style={[styles.calDay, hasRecord && styles.calDayActive]}>
-                    <Text style={[styles.calDayNum, hasRecord && styles.calDayNumActive]}>
-                      {day}
-                    </Text>
-                    {hasRecord && <Text style={styles.calDayMin}>{totalMin}分</Text>}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -328,6 +326,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  cumulativeMinutes: {
+    fontSize: 18,
+    fontFamily: FONT.bold,
+    color: COLORS.primary,
+  },
+  cumulativeLabel: {
+    fontSize: 11,
+    fontFamily: FONT.medium,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.6,
   },
   logoText: {
     fontSize: 20,
@@ -441,7 +455,9 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 130,
     backgroundColor: 'rgba(70,98,83,0.06)',
-    top: 20,
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -130 }, { translateY: -130 }],
   },
   timerButton: {
     width: 170,
@@ -509,6 +525,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  soundLabel: {
+    fontSize: 11,
+    fontFamily: FONT.medium,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  soundLabelActive: {
+    color: COLORS.primary,
+    opacity: 1,
+    fontFamily: FONT.semiBold,
+  },
   soundDot: {
     width: 4,
     height: 4,
@@ -526,79 +554,5 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: SPACING.containerMargin,
-  },
-  // 日历
-  calendarSection: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    marginHorizontal: SPACING.containerMargin,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.xxl,
-    borderRadius: RADIUS.xxl,
-    padding: SPACING.lg,
-    ...SHADOWS.small,
-    borderWidth: 1,
-    borderColor: 'rgba(114,121,115,0.06)',
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  calTitle: {
-    fontSize: 14,
-    fontFamily: FONT.semiBold,
-    color: COLORS.onSurface,
-  },
-  calArrowBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: SPACING.sm,
-  },
-  weekDay: {
-    fontSize: 11,
-    fontFamily: FONT.semiBold,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.35,
-    width: 36,
-    textAlign: 'center',
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  calDay: {
-    width: `${100 / 7}%`,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: RADIUS.DEFAULT,
-  },
-  calDayActive: {
-    backgroundColor: 'rgba(70,98,83,0.08)',
-  },
-  calDayNum: {
-    fontSize: 13,
-    fontFamily: FONT.regular,
-    color: COLORS.onSurface,
-  },
-  calDayNumActive: {
-    color: COLORS.primary,
-    fontFamily: FONT.semiBold,
-  },
-  calDayMin: {
-    fontSize: 9,
-    fontFamily: FONT.medium,
-    color: COLORS.primary,
-    marginTop: 2,
-    opacity: 0.8,
   },
 });

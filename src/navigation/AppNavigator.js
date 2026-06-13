@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Easing } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { MaterialIcons } from '@expo/vector-icons';
 import TherapyScreen from '../components/TherapyScreen';
@@ -33,7 +33,6 @@ function TabIcon({ focused, routeName }) {
   if (!config) return null;
 
   const iconName = focused ? config.icon : config.inactiveIcon;
-  // Figma 规范：Profile 页面活跃态用 primary 深绿，其他页面用 primaryFixed 浅绿
   const activeBg = routeName === 'Profile' ? COLORS.primary : COLORS.primaryFixed;
   const activeIconColor = routeName === 'Profile' ? COLORS.onPrimary : COLORS.onPrimaryFixedVariant;
 
@@ -46,6 +45,45 @@ function TabIcon({ focused, routeName }) {
         style={{ opacity: focused ? 1 : 0.5 }}
       />
     </View>
+  );
+}
+
+function TabBarButton({ onPress, children, style }) {
+  const rippleScale = useRef(new Animated.Value(0)).current;
+  const rippleOpacity = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    rippleScale.setValue(0);
+    rippleOpacity.setValue(0.14);
+    Animated.parallel([
+      Animated.timing(rippleScale, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(rippleOpacity, {
+        toValue: 0,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Pressable onPress={onPress} onPressIn={handlePressIn} style={[style, styles.tabButtonWrap]}>
+      <Animated.View
+        style={[
+          styles.ripple,
+          {
+            transform: [{ scale: rippleScale.interpolate({ inputRange: [0, 1], outputRange: [0.5, 3.2] }) }],
+            opacity: rippleOpacity,
+          },
+        ]}
+      />
+      {children}
+    </Pressable>
   );
 }
 
@@ -64,6 +102,7 @@ export default function AppNavigator() {
         tabBarIcon: ({ focused }) => (
           <TabIcon focused={focused} routeName={route.name} />
         ),
+        tabBarButton: (props) => <TabBarButton {...props} />,
       })}
     >
       <Tab.Screen name="Therapy" component={TherapyScreen} />
@@ -90,12 +129,29 @@ const styles = StyleSheet.create({
     elevation: 0,
     overflow: 'hidden',
   },
+  tabButtonWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
     width: 48,
     height: 48,
     borderRadius: RADIUS.full,
+    zIndex: 2,
+  },
+  ripple: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primaryFixedDim,
+    top: '50%',
+    left: '50%',
+    marginLeft: -24,
+    marginTop: -24,
+    zIndex: 1,
   },
 });

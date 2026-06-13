@@ -7,7 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "generate-sounds": "node src/utils/generateSounds.js"
+    "generate-sounds": "node src/utils/generateSounds.js",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
@@ -20,6 +21,7 @@
     "expo-asset": "~56.0.16",
     "expo-audio": "~56.0.11",
     "expo-blur": "~56.0.3",
+    "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.5",
     "expo-haptics": "~56.0.3",
     "expo-image-picker": "~56.0.16",
@@ -28,15 +30,21 @@
     "expo-modules-core": "~56.0.15",
     "expo-status-bar": "~56.0.4",
     "jimp": "^0.22.12",
+    "qrcode": "^1.5.4",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
-    "@expo/ngrok": "^4.1.3"
+    "@expo/ngrok": "^4.1.3",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "lamejs": "^1.2.1",
+    "patch-package": "^8.0.1"
   },
   "private": true
 }

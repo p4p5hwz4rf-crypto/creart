@@ -18,7 +18,7 @@ export function SubscriptionProvider({ children }) {
         setRegisterDate(now);
       }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const getSubscriptionStatus = async () => {

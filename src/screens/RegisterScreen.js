@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -63,9 +64,9 @@ const styles = StyleSheet.create({
   phoneInput: { flex: 1, height: 50, fontSize: 16, color: COLORS.textPrimary },
   codeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xl },
   codeInput: { flex: 1, height: 50, backgroundColor: COLORS.card, borderRadius: 12, paddingHorizontal: SPACING.md, fontSize: 16, marginRight: SPACING.sm },
-  codeBtn: { backgroundColor: COLORS.breathing, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12 },
+  codeBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12 },
   codeBtnText: { color: '#fff', fontSize: 13 },
-  registerBtn: { backgroundColor: COLORS.breathing, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  registerBtn: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
   registerBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   link: { marginTop: SPACING.lg, alignSelf: 'center' },
   linkText: { color: COLORS.textSecondary, fontSize: 14 },

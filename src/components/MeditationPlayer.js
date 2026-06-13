@@ -1,69 +1,79 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
 import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system';
 import { COLORS } from '../theme';
 
 const PRESETS = [5, 10, 15, 30];
 
-// Load audio asset asynchronously to avoid Metro bundling 34MB file inline
-const audioModule = require('../../assets/sounds/gymnopedie.wav');
+// Default (meditation): Deuter - Dammerschein
+const meditationModule = require('../../assets/sounds/gymnopedie.mp3');
+// Focus / White noise: Martin Ermen - Gymnopedie Nr. 1
+const focusModule = require('../../assets/sounds/gymnopedie_focus.mp3');
 
-export default function MeditationPlayer({ active, onComplete, defaultDuration, color, showTimer }) {
-  const [durationMin, setDurationMin] = useState(Math.floor(defaultDuration / 60));
-  const [remaining, setRemaining] = useState(defaultDuration);
-  const [breathPhase, setBreathPhase] = useState('');
-  const [audioUri, setAudioUri] = useState(null);
+export default function MeditationPlayer({ active, onComplete, duration, onDurationChange, color, showTimer, audioSource }) {
+  const audioModule = audioSource || meditationModule;
+  const cacheName = audioSource === focusModule ? 'gymnopedie_focus.mp3' : 'gymnopedie.mp3';
+  const totalSeconds = duration || 300;
+  const durationMin = Math.floor(totalSeconds / 60);
+  const [remaining, setRemaining] = useState(totalSeconds);
+  const [localUri, setLocalUri] = useState(null);
   const timerRef = useRef(null);
-  const breathRef = useRef(null);
-  const player = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+  const player = useAudioPlayer(localUri ? { uri: localUri } : audioModule);
 
+  // Cache audio locally for smooth looping
   useEffect(() => {
-    const asset = Asset.fromModule(audioModule);
-    asset.downloadAsync().then(() => {
-      setAudioUri(asset.localUri || asset.uri);
-    });
-  }, []);
+    let cancelled = false;
+    const cacheUri = FileSystem.cacheDirectory + cacheName;
+    async function prepare() {
+      try {
+        const info = await FileSystem.getInfoAsync(cacheUri);
+        if (info.exists) { if (!cancelled) setLocalUri(cacheUri); return; }
+      } catch (e) { /* download */ }
+      try {
+        const asset = Asset.fromModule(audioModule);
+        await asset.downloadAsync();
+        const src = asset.localUri || asset.uri;
+        await FileSystem.copyAsync({ from: src, to: cacheUri });
+        if (!cancelled) setLocalUri(cacheUri);
+      } catch (e) { /* keep using direct require */ }
+    }
+    prepare();
+    return () => { cancelled = true; };
+  }, [cacheName]);
 
   useEffect(() => {
     if (active) {
-      const total = durationMin * 60;
+      const startTime = Date.now();
+      const src = localUri ? { uri: localUri } : audioModule;
+      try { player.replace(src); } catch (e) {}
       player.loop = true;
       player.volume = 0.4;
-      player.play();
-      setRemaining(total);
+      try { player.play(); } catch (e) {}
+      setRemaining(totalSeconds);
 
       timerRef.current = setInterval(() => {
-        setRemaining(r => {
-          if (r <= 1) { clearInterval(timerRef.current); onComplete && onComplete(total); return 0; }
-          return r - 1;
-        });
-      }, 1000);
-
-      if (!showTimer) {
-        let phase = 0;
-        const cycle = () => {
-          if (phase === 0) { setBreathPhase('吸气...'); phase = 1; breathRef.current = setTimeout(cycle, 4000); }
-          else if (phase === 1) { setBreathPhase('保持...'); phase = 2; breathRef.current = setTimeout(cycle, 2000); }
-          else { setBreathPhase('呼气...'); phase = 0; breathRef.current = setTimeout(cycle, 4000); }
-        };
-        cycle();
-      }
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const r = totalSeconds - elapsed;
+        if (r <= 0) {
+          clearInterval(timerRef.current);
+          setRemaining(0);
+          try { player.pause(); } catch (e) {}
+          onComplete && onComplete(totalSeconds);
+        } else {
+          setRemaining(r);
+        }
+      }, 250);
     } else {
       clearInterval(timerRef.current);
-      clearTimeout(breathRef.current);
-      setBreathPhase('');
-      player.pause();
+      try { player.pause(); } catch (e) {}
     }
     return () => {
       clearInterval(timerRef.current);
-      clearTimeout(breathRef.current);
-      setBreathPhase('');
-      player.pause();
+      try { player.pause(); } catch (e) {}
     };
-  }, [active, durationMin, showTimer]);
-
-  const formatTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  }, [active, totalSeconds, localUri]);
 
   return (
     <View style={styles.container}>
@@ -74,18 +84,18 @@ export default function MeditationPlayer({ active, onComplete, defaultDuration, 
             {PRESETS.map(m => (
               <TouchableOpacity
                 key={m}
-                onPress={() => setDurationMin(m)}
-                style={[styles.presetBtn, durationMin===m && { backgroundColor: color, borderColor: color }]}
+                onPress={() => onDurationChange && onDurationChange(m * 60)}
+                style={[styles.presetBtn, durationMin === m && { backgroundColor: color, borderColor: color }]}
               >
-                <Text style={[styles.presetText, durationMin===m && { color: '#fff' }]}>{m}</Text>
+                <Text style={[styles.presetText, durationMin === m && { color: '#fff' }]}>{m}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
       )}
-      <Text style={styles.timer}>{formatTime(remaining)}</Text>
-      {breathPhase ? <Text style={[styles.breathText, { color }]}>{breathPhase}</Text> : null}
-      <Text style={styles.hint}>{active ? (showTimer ? '保持专注，享受宁静' : '跟随呼吸，回归当下') : '设置时长，开始冥想'}</Text>
+      <Text style={styles.hint}>
+        {active ? (showTimer ? '保持专注，享受宁静' : '跟随呼吸，回归当下') : '设置时长，开始冥想'}
+      </Text>
     </View>
   );
 }
@@ -100,7 +110,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.divider,
   },
   presetText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
-  timer: { fontSize: 40, fontWeight: '200', color: COLORS.textPrimary, letterSpacing: 2 },
-  breathText: { marginTop: 12, fontSize: 16, fontWeight: '500' },
   hint: { marginTop: 10, fontSize: 12, color: COLORS.textLight },
 });

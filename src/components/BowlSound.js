@@ -1,22 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
+import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system';
 import { COLORS } from '../theme';
+
+const bowlModule = require('../../assets/sounds/bowl.mp3');
 
 export default function BowlSound({ active, onComplete, defaultDuration, color }) {
   const [remaining, setRemaining] = useState(defaultDuration);
+  const [localUri, setLocalUri] = useState(null);
   const timerRef = useRef(null);
   const rippleIntervalRef = useRef(null);
   const ripple1 = useRef(new Animated.Value(0)).current;
   const ripple2 = useRef(new Animated.Value(0)).current;
   const ripple3 = useRef(new Animated.Value(0)).current;
-  const player = useAudioPlayer(require('../../assets/sounds/bowl.wav'));
+  const player = useAudioPlayer(localUri ? { uri: localUri } : bowlModule);
+
+  // Cache audio locally for smooth looping
+  useEffect(() => {
+    let cancelled = false;
+    const cacheUri = FileSystem.cacheDirectory + 'bowl.mp3';
+    async function prepare() {
+      try {
+        const info = await FileSystem.getInfoAsync(cacheUri);
+        if (info.exists) { if (!cancelled) setLocalUri(cacheUri); return; }
+      } catch (e) { /* download */ }
+      try {
+        const asset = Asset.fromModule(bowlModule);
+        await asset.downloadAsync();
+        const src = asset.localUri || asset.uri;
+        await FileSystem.copyAsync({ from: src, to: cacheUri });
+        if (!cancelled) setLocalUri(cacheUri);
+      } catch (e) { /* keep using direct require */ }
+    }
+    prepare();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (active) {
+      // Use cached URI if available
+      if (localUri) {
+        try { player.replace({ uri: localUri }); } catch (e) {}
+      }
       player.loop = true;
       player.volume = 0.7;
-      player.play();
+      try { player.play(); } catch (e) {}
       startRipple();
 
       rippleIntervalRef.current = setInterval(() => {
@@ -35,15 +65,15 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
       clearInterval(timerRef.current);
       clearInterval(rippleIntervalRef.current);
       stopRipple();
-      player.pause();
+      try { player.pause(); } catch (e) {}
     }
     return () => {
       clearInterval(timerRef.current);
       clearInterval(rippleIntervalRef.current);
       stopRipple();
-      player.pause();
+      try { player.pause(); } catch (e) {}
     };
-  }, [active]);
+  }, [active, localUri]);
 
   const startRipple = () => {
     const create = (anim, delay) => {
@@ -84,8 +114,7 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
           <Text style={styles.bowlText}>钵</Text>
         </View>
       </View>
-      <Text style={styles.timer}>{remaining > 0 ? `${remaining}秒` : '结束'}</Text>
-      <Text style={styles.hint}>让音钵的余韵清空思绪</Text>
+      <Text style={styles.hint}>{active ? '清空中' : '让音钵的余韵清空思绪'}</Text>
     </View>
   );
 }
@@ -96,6 +125,5 @@ const styles = StyleSheet.create({
   ripple: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 1.5 },
   bowl: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
   bowlText: { color: '#fff', fontSize: 20, fontWeight: '600', letterSpacing: 2 },
-  timer: { fontSize: 16, fontWeight: '300', color: COLORS.textPrimary, letterSpacing: 1 },
   hint: { marginTop: 12, fontSize: 12, color: COLORS.textLight, letterSpacing: 0.5 },
 });

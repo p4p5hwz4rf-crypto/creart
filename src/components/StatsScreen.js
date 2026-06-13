@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SIZES, SPACING, SHADOWS } from '../theme';
 import { MONTH_NAMES } from '../constants';
@@ -79,7 +80,7 @@ export default function StatsScreen() {
               ? '每一天的平静积累，都是对身心的温柔关照。'
               : '本月还没有记录哦，今天开始第一次疗愈吧～'}
           </Text>
-          <TouchableOpacity onPress={async () => { await clearAllStats(); loadData(); }}>
+          <TouchableOpacity onPress={async () => { try { await clearAllStats(); loadData(); } catch (e) {} }}>
             <Text style={styles.clearText}>清空数据（调试用）</Text>
           </TouchableOpacity>
         </View>

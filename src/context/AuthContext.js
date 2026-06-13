@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
     AsyncStorage.getItem('@user').then((data) => {
       if (data) setUser(JSON.parse(data));
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const login = async (phone) => {
@@ -31,8 +31,14 @@ export function AuthProvider({ children }) {
     setUser(u);
   };
 
+  const updateAvatar = async (uri) => {
+    const u = { ...user, avatarUri: uri };
+    await AsyncStorage.setItem('@user', JSON.stringify(u));
+    setUser(u);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateName, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateName, updateAvatar, loading }}>
       {children}
     </AuthContext.Provider>
   );
