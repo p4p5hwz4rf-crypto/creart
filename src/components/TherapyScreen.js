@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { COLORS, SPACING, SHADOWS, RADIUS, FONT } from '../theme';
+import { COLORS, SPACING, SHADOWS, RADIUS, FONT, MODE_GRADIENTS, SCREEN_GRADIENT } from '../theme';
 import { MODE_CONFIG, MODES } from '../constants';
 import BreathingGuide from './BreathingGuide';
 import NatureSound from './NatureSound';
@@ -20,96 +19,128 @@ import { getTodayStats, addUsageTime } from '../storage';
 const focusAudio = require('../../assets/sounds/gymnopedie_focus.mp3');
 
 const MODE_LIST = [
-  MODES.DEEP_BREATHING, MODES.NATURE_SOUND, MODES.SINGING_BOWL,
-  MODES.ASMR, MODES.MEDITATION, MODES.WHITE_NOISE,
+  MODES.DEEP_BREATHING,
+  MODES.NATURE_SOUND,
+  MODES.SINGING_BOWL,
+  MODES.ASMR,
+  MODES.MEDITATION,
+  MODES.WHITE_NOISE,
 ];
 
-const MODE_IMAGES = {
-  [MODES.MEDITATION]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzoi6RZKWOlUNloKRliuyhAZSXdlaHWrtUGf6cSEugcgsAqYxPoJ6kFpdhLeejiDAZiV1L2V4OZ1SYjsawvV00PwoTJXq6i3U_t8QMYFojNfI5CaYeJdocsxyjNsj4roH7_NKdZ-i2YeMnPkxyPiGo83bgP_1G0UV_i03dbZoP2yI_YJ_iLeaqEEd_L5EGz0g0rziUCfKmSawB1IOVDNSDM5rsR9wxYHV5lnk_8HwINxxGj76uDuwwvR0CLNStHs1OsXwD4EBVaA',
-  [MODES.NATURE_SOUND]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAuOxODjOp5SP62iCcxdJRdA6QyXLFutgRs7DZOjPVbF7l3g4jVrMGUQ1pFs8mt6TLOmv9AqwiqLD-4lLtwJh5g2OMW7PyCj-i-2vNTn5Xw9d6zUfR2WJiMIc5Hy4nRSbKmbx4qHy_WCxW1yElZOBIA3KJ8ARgr-4h_kM1P2sduGfxnNIAHHcakO37EuylKbb8kApynZXBGgbMN9Wrg2nOnI00Nz-ocPvnePAH_eBykJ8VE9SUO_RVekMD16cfk-nIsFzEegd-zRQ',
-  [MODES.WHITE_NOISE]: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYNgU4Ch8PVlKsi9u1FD9Zbuc8inviBI60FOBm5UF9uUFTTdARa6PqG2XO1H0bubydStq27Xiiu7Us15Grpzb03ETgzoYsJd4lP6BjZ6sAYPvpzc8YmNKtoGnqjA-iStjc3AC_jkvf0lw0R02xCGoNr1JZxpi9p5OjtkRD0CajRtCixsa0lolVxbT_fT2GXQxNnMgivGi03w_KU1FjNUZZh_wqjsrp0PeS97odAE1yNcfTeVwBBF-LdHKCwCUrZIyxqTYjHYhTTg',
+const formatClock = (seconds) => {
+  const safeSeconds = Math.max(0, seconds || 0);
+  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(2, '0')}`;
 };
 
-const MODE_LABELS = {
-  [MODES.DEEP_BREATHING]: '深呼吸',
-  [MODES.NATURE_SOUND]: '自然音',
-  [MODES.SINGING_BOWL]: '音钵',
-  [MODES.ASMR]: 'ASMR',
-  [MODES.MEDITATION]: '冥想',
-  [MODES.WHITE_NOISE]: '专注',
-};
 export default function TherapyScreen() {
   const [selectedMode, setSelectedMode] = useState(MODES.MEDITATION);
   const [isActive, setIsActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [todayStats, setTodayStats] = useState({});
   const [natureSubMode, setNatureSubMode] = useState('rain');
   const [buttonCountdown, setButtonCountdown] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState(0);
   const countdownRef = useRef(null);
-  const completedRef = useRef(false); // prevent double-counting
+  const completedRef = useRef(false);
+  const pausedRemainingRef = useRef(0);
+  const prevTotalRef = useRef(0);
+  const loggedElapsedRef = useRef(0);
 
   useFocusEffect(
     useCallback(() => {
       getTodayStats().then(setTodayStats);
-    }, [isActive])
+    }, [])
   );
 
   const config = MODE_CONFIG[selectedMode];
+  const activeGradient = MODE_GRADIENTS[selectedMode] || MODE_GRADIENTS.meditation;
 
-  // Sync selectedDuration on mode switch
   useEffect(() => {
     setSelectedDuration(config.defaultDuration);
-  }, [selectedMode]);
+  }, [selectedMode, config.defaultDuration]);
 
-  // Item 2: 精确倒计时，1秒刷新（Date.now() 基准，无漂移）
   useEffect(() => {
+    setIsPaused(false);
+    pausedRemainingRef.current = 0;
+  }, [selectedDuration]);
+
+  useEffect(() => {
+    const total = selectedDuration || config.defaultDuration;
+    const durationChanged = prevTotalRef.current !== total;
+
     if (isActive) {
-      const total = selectedDuration || config.defaultDuration;
+      prevTotalRef.current = total;
+      const startFrom = durationChanged ? total : (pausedRemainingRef.current || total);
       const startTime = Date.now();
-      setButtonCountdown(total);
+      setButtonCountdown(startFrom);
+      pausedRemainingRef.current = startFrom;
       countdownRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const remaining = total - elapsed;
+        const remaining = startFrom - elapsed;
         if (remaining <= 0) {
           clearInterval(countdownRef.current);
           setButtonCountdown(0);
-          // Item 1: 时长到了自动停止音频
+          pausedRemainingRef.current = 0;
           setIsActive(false);
           handleComplete(total);
         } else {
           setButtonCountdown(remaining);
+          pausedRemainingRef.current = remaining;
         }
       }, 1000);
     } else {
       clearInterval(countdownRef.current);
-      setButtonCountdown(0);
     }
     return () => clearInterval(countdownRef.current);
   }, [isActive, selectedDuration, config.defaultDuration]);
 
   const handleToggle = () => {
     if (isActive) {
-      // Pausing: record elapsed time
+      // Playing → Paused
       const total = selectedDuration || config.defaultDuration;
-      const elapsed = total - buttonCountdown;
+      const remaining = pausedRemainingRef.current;
+      const elapsed = total - remaining - loggedElapsedRef.current;
       if (elapsed > 0) {
+        loggedElapsedRef.current += elapsed;
+        setTodayStats(prev => {
+          const next = { ...prev };
+          next[selectedMode] = (next[selectedMode] || 0) + elapsed;
+          return next;
+        });
         addUsageTime(selectedMode, elapsed);
-        getTodayStats().then(setTodayStats);
       }
+      setIsActive(false);
+      setIsPaused(true);
+    } else if (isPaused) {
+      // Paused → Playing (resume)
+      setIsPaused(false);
+      setIsActive(true);
     } else {
-      // Starting new session: reset completion guard
+      // Idle → Playing (start)
+      const total = selectedDuration || config.defaultDuration;
+      pausedRemainingRef.current = total;
       completedRef.current = false;
+      loggedElapsedRef.current = 0;
+      setIsActive(true);
+      setIsPaused(false);
     }
-    setIsActive(prev => !prev);
   };
 
   const handleModeChange = (modeKey) => {
     if (modeKey === selectedMode) return;
     if (isActive) {
       const total = selectedDuration || config.defaultDuration;
-      const elapsed = total - buttonCountdown;
-      if (elapsed > 0) addUsageTime(selectedMode, elapsed);
+      const elapsed = total - pausedRemainingRef.current - loggedElapsedRef.current;
+      if (elapsed > 0) {
+        (async () => {
+          await addUsageTime(selectedMode, elapsed);
+        })();
+      }
     }
+    loggedElapsedRef.current = 0;
+    pausedRemainingRef.current = 0;
+    setIsActive(false);
+    setIsPaused(false);
     setSelectedMode(modeKey);
   };
 
@@ -117,8 +148,18 @@ export default function TherapyScreen() {
     if (completedRef.current) return;
     completedRef.current = true;
     setIsActive(false);
-    addUsageTime(selectedMode, seconds || selectedDuration || config.defaultDuration);
-    getTodayStats().then(setTodayStats);
+    setIsPaused(false);
+    const full = seconds || selectedDuration || config.defaultDuration;
+    const net = Math.max(0, full - loggedElapsedRef.current);
+    loggedElapsedRef.current = 0;
+    if (net > 0) {
+      setTodayStats(prev => {
+        const next = { ...prev };
+        next[selectedMode] = (next[selectedMode] || 0) + net;
+        return next;
+      });
+      addUsageTime(selectedMode, net);
+    }
   };
 
   const renderPlayer = () => {
@@ -134,12 +175,13 @@ export default function TherapyScreen() {
         return (
           <NatureSound
             {...commonProps}
-            defaultDuration={config.defaultDuration}
+            duration={selectedDuration}
+            onDurationChange={setSelectedDuration}
             subMode={natureSubMode}
           />
         );
       case MODES.SINGING_BOWL:
-        return <BowlSound {...commonProps} defaultDuration={config.defaultDuration} />;
+        return <BowlSound {...commonProps} duration={selectedDuration} onDurationChange={setSelectedDuration} />;
       case MODES.ASMR:
         return <ASMRPlayer {...commonProps} duration={selectedDuration} onDurationChange={setSelectedDuration} allowLoop />;
       case MODES.MEDITATION:
@@ -153,111 +195,118 @@ export default function TherapyScreen() {
 
   const todayTotal = Object.values(todayStats).reduce((a, b) => a + b, 0);
   const totalDuration = selectedDuration || config.defaultDuration;
-  const liveElapsed = isActive ? totalDuration - buttonCountdown : 0;
+  const liveElapsed = isActive
+    ? Math.max(0, totalDuration - pausedRemainingRef.current - loggedElapsedRef.current)
+    : 0;
   const liveTodaySeconds = todayTotal + liveElapsed;
 
   return (
     <LinearGradient
-      colors={['#f4fbf8', '#eef5f2', '#cbead6']}
+      colors={SCREEN_GRADIENT}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* 顶部 Blur Header */}
-          <BlurView intensity={30} tint="light" style={styles.header}>
+          <BlurView intensity={34} tint="light" style={styles.header}>
             <View style={styles.headerInner}>
               <View style={styles.logoRow}>
                 <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-                <Text style={styles.logoText}>数字静修所</Text>
+                <Text style={styles.logoText}>心灵疗愈室——让情绪流动</Text>
               </View>
-
-
+              <View style={styles.todayPill}>
+                <Text style={styles.todayPillValue}>{formatClock(liveTodaySeconds)}</Text>
+                <Text style={styles.todayPillLabel}>今日</Text>
+              </View>
             </View>
           </BlurView>
 
-          {/* 标题区 */}
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={styles.greeting}>重拾宁静</Text>
-              <Text style={styles.subGreeting}>拥抱当下的静谧</Text>
+          <View style={styles.hero}>
+            <View style={[styles.heroIcon, { backgroundColor: activeGradient[0] }]}>
+              <MaterialIcons name={config.icon} size={24} color="#fff" />
             </View>
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayMinutes}>{Math.floor(liveTodaySeconds / 60)}:{String(liveTodaySeconds % 60).padStart(2, '0')}</Text>
-              <Text style={styles.todayLabel}>今日分钟</Text>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.greeting}>重拾宁静</Text>
+              <Text style={styles.subGreeting}>选择一个声音，让身心慢慢落地。</Text>
             </View>
           </View>
 
-          {/* 模式卡片滑块 */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.modeList}
           >
             {MODE_LIST.map((modeKey) => {
+              const modeConfig = MODE_CONFIG[modeKey];
               const active = selectedMode === modeKey;
-              const imageUri = MODE_IMAGES[modeKey];
               return (
                 <TouchableOpacity
                   key={modeKey}
-                  activeOpacity={0.85}
+                  activeOpacity={0.86}
                   onPress={() => handleModeChange(modeKey)}
-                  style={styles.modeCardWrap}
+                  style={[styles.modeCardWrap, active && styles.modeCardWrapActive]}
                 >
-                  <View style={[styles.modeImageWrap, active && styles.modeImageWrapActive]}>
-                    {imageUri ? (
-                      <Image source={{ uri: imageUri }} style={styles.modeImage} />
-                    ) : (
-                      <View style={[styles.modeImageFallback, { backgroundColor: config.color }]}>
-                        <Text style={styles.modeImageFallbackText}>{MODE_LABELS[modeKey]?.[0]}</Text>
-                      </View>
-                    )}
-                    {active && <View style={styles.modeImageOverlay} />}
+                  <View style={[styles.modeArt, { backgroundColor: (MODE_GRADIENTS[modeKey] || activeGradient)[1] }]}>
+                    <MaterialIcons name={modeConfig.icon} size={30} color="#fff" />
                   </View>
-                  <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>
-                    {MODE_LABELS[modeKey]}
+                  <Text style={[styles.modeLabel, active && { color: modeConfig.color }]}>
+                    {modeConfig.title}
                   </Text>
+                  <Text style={styles.modeSubLabel}>{modeConfig.subtitle}</Text>
                 </TouchableOpacity>
               );
             })}
-            {/* Explore More 卡片 */}
-            <TouchableOpacity activeOpacity={0.85} style={styles.modeCardWrap}>
-              <View style={styles.modeImageWrap}>
-                <View style={[styles.modeImageFallback, { backgroundColor: COLORS.surfaceContainerHigh }]}>
-                  <MaterialIcons name="add-circle" size={32} color={COLORS.primary} style={{ opacity: 0.4 }} />
-                </View>
+            <TouchableOpacity activeOpacity={0.86} style={styles.modeCardWrap}>
+              <View style={[styles.modeArt, styles.moreArt]}>
+                <MaterialIcons name="add" size={30} color={COLORS.primary} />
               </View>
               <Text style={styles.modeLabel}>探索更多</Text>
+              <Text style={styles.modeSubLabel}>即将到来</Text>
             </TouchableOpacity>
           </ScrollView>
 
-          {/* 计时器区域 */}
           <View style={styles.timerSection}>
             <TouchableOpacity
-              activeOpacity={0.95}
+              activeOpacity={0.92}
               onPress={handleToggle}
-              style={styles.timerButton}
+              style={[
+                styles.timerButton,
+                (isActive || isPaused) && { borderColor: `${config.color}55` },
+              ]}
             >
-              <MaterialIcons
-                name={isActive ? 'pause' : 'play-arrow'}
-                size={48}
-                color={COLORS.primary}
-              />
-              <Text style={styles.timerButtonText}>
-                {isActive ? '暂停' : '开始'}
-              </Text>
-              {/* 倒计时 — 只在按下开始后显示实时计时 */}
-              {isActive && buttonCountdown > 0 && (
-                <Text style={styles.timerCountdown}>
-                  {Math.floor(buttonCountdown / 60)}:{String(buttonCountdown % 60).padStart(2, '0')}
+              <LinearGradient
+                colors={isActive || isPaused ? activeGradient : ['#ffffff', COLORS.surfaceContainerLow]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.timerButtonInner}
+              >
+                <MaterialIcons
+                  name={isActive ? 'pause' : 'play-arrow'}
+                  size={48}
+                  color={isActive || isPaused ? '#fff' : config.color}
+                />
+                <Text style={[styles.timerButtonText, (isActive || isPaused) && styles.timerButtonTextActive]}>
+                  {isActive ? '暂停' : isPaused ? '继续' : '开始'}
                 </Text>
-              )}
+                {(isActive || isPaused) && buttonCountdown > 0 && (
+                  <Text style={styles.timerCountdown}>{formatClock(buttonCountdown)}</Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
-            <Text style={styles.timerCaption}>{config.description}</Text>
+            <Text style={styles.timerCaption}>
+              {isActive
+                ? selectedMode === MODES.NATURE_SOUND
+                  ? '此刻你在大自然中，放下烦恼呼吸'
+                  : selectedMode === MODES.SINGING_BOWL
+                    ? '闭上眼睛，让大脑呼吸'
+                    : '保持这个节奏，慢慢来。'
+                : isPaused
+                  ? '已暂停，点击继续'
+                  : '准备好后，轻触开始。'}
+            </Text>
           </View>
 
-          {/* 子模式选择器（仅 Nature 模式） */}
           {selectedMode === MODES.NATURE_SOUND && config.subModes && (
             <View style={styles.soundRow}>
               {config.subModes.map((sm) => {
@@ -267,28 +316,23 @@ export default function TherapyScreen() {
                     key={sm.key}
                     activeOpacity={0.8}
                     onPress={() => { setNatureSubMode(sm.key); }}
-                    style={styles.soundWrap}
+                    style={[styles.soundWrap, active && styles.soundWrapActive]}
                   >
-                    <View style={[styles.soundBtn, active && styles.soundBtnActive]}>
-                      <MaterialIcons
-                        name={sm.icon}
-                        size={active ? 24 : 20}
-                        color={active ? COLORS.primary : COLORS.onSurfaceVariant}
-                      />
-                    </View>
+                    <MaterialIcons
+                      name={sm.icon}
+                      size={20}
+                      color={active ? COLORS.onPrimary : COLORS.onSurfaceVariant}
+                    />
                     <Text style={[styles.soundLabel, active && styles.soundLabelActive]}>{sm.label}</Text>
-                    <View style={[styles.soundDot, active && styles.soundDotActive]} />
                   </TouchableOpacity>
                 );
               })}
             </View>
           )}
 
-          {/* Player 容器 */}
           <View style={styles.playerContainer}>
             {renderPlayer()}
           </View>
-
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -303,9 +347,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: SPACING.xxl,
+    paddingTop: 80,
+    paddingBottom: 120,
   },
-  // 顶部 Blur Header
   header: {
     position: 'absolute',
     top: 0,
@@ -315,6 +359,8 @@ const styles = StyleSheet.create({
     height: 64,
     justifyContent: 'flex-end',
     paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(79,122,100,0.06)',
   },
   headerInner: {
     flexDirection: 'row',
@@ -325,232 +371,191 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  cumulativeMinutes: {
-    fontSize: 18,
-    fontFamily: FONT.bold,
-    color: COLORS.primary,
-  },
-  cumulativeLabel: {
-    fontSize: 11,
-    fontFamily: FONT.medium,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.6,
+    gap: 7,
   },
   logoText: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: FONT.semiBold,
-    fontStyle: 'italic',
     color: COLORS.primary,
-    letterSpacing: -0.5,
   },
-  // 标题区
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: SPACING.containerMargin,
-    paddingTop: 88,
-    paddingBottom: SPACING.lg,
-  },
-  greeting: {
-    fontSize: 24,
-    fontFamily: FONT.semiBold,
-    color: COLORS.onSurface,
-    letterSpacing: -0.3,
-  },
-  subGreeting: {
-    fontSize: 13,
-    fontFamily: FONT.regular,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 4,
-    opacity: 0.7,
-  },
-  todayBadge: {
-    alignItems: 'flex-end',
-  },
-  todayMinutes: {
-    fontSize: 32,
-    fontFamily: FONT.bold,
-    color: COLORS.primary,
-    lineHeight: 36,
-  },
-  todayLabel: {
-    fontSize: 11,
-    fontFamily: FONT.medium,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.6,
-    marginTop: 2,
-  },
-  // 模式卡片
-  modeList: {
-    paddingLeft: SPACING.containerMargin,
-    paddingVertical: SPACING.md,
-    paddingRight: 40,
-    gap: 12,
-  },
-  modeCardWrap: {
-    marginRight: 12,
-    alignItems: 'center',
-  },
-  modeImageWrap: {
-    width: 112,
-    height: 112,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-    ...SHADOWS.figmaCard,
-  },
-  modeImageWrapActive: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  modeImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  modeImageFallback: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modeImageFallbackText: {
-    fontSize: 28,
-    fontFamily: FONT.bold,
-    color: '#fff',
-    opacity: 0.8,
-  },
-  modeImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(70,98,83,0.15)',
-  },
-  modeLabel: {
-    fontSize: 12,
-    fontFamily: FONT.medium,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  modeLabelActive: {
-    color: COLORS.primary,
-    fontFamily: FONT.semiBold,
-  },
-  // 计时器区域
-  timerSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xl,
-    position: 'relative',
-  },
-  timerGlow: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(70,98,83,0.06)',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -130 }, { translateY: -130 }],
-  },
-  timerButton: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.figmaCard,
+  todayPill: {
+    minWidth: 74,
+    minHeight: 36,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(255,255,255,0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(194,200,194,0.1)',
-    zIndex: 2,
+    borderColor: 'rgba(79,122,100,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
-  timerButtonText: {
-    fontSize: 12,
-    fontFamily: FONT.medium,
-    color: COLORS.primary,
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-  timerCountdown: {
-    fontSize: 28,
+  todayPillValue: {
+    fontSize: 13,
     fontFamily: FONT.bold,
     color: COLORS.primary,
-    marginTop: 4,
+    lineHeight: 16,
   },
-  timerCaption: {
-    fontSize: 14,
-    fontFamily: FONT.regular,
-    color: COLORS.onSurfaceVariant,
-    fontStyle: 'italic',
-    opacity: 0.8,
-    marginTop: SPACING.lg,
+  todayPillLabel: {
+    fontSize: 10,
+    fontFamily: FONT.medium,
+    color: COLORS.textLight,
+    lineHeight: 13,
   },
-  // 声音切换
-  soundRow: {
+  hero: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    gap: 20,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.md,
-  },
-  soundWrap: {
     alignItems: 'center',
+    paddingHorizontal: SPACING.containerMargin,
+    marginBottom: SPACING.md,
+    gap: SPACING.md,
   },
-  soundBtn: {
+  heroIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(233,239,236,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.small,
+  },
+  heroTextBlock: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 24,
+    fontFamily: FONT.bold,
+    color: COLORS.onSurface,
+    lineHeight: 30,
+  },
+  subGreeting: {
+    fontSize: 14,
+    fontFamily: FONT.regular,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 4,
+    lineHeight: 21,
+  },
+  modeList: {
+    paddingLeft: SPACING.containerMargin,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
+    paddingRight: SPACING.containerMargin,
+    gap: 12,
+  },
+  modeCardWrap: {
+    width: 112,
+    minHeight: 142,
+    borderRadius: RADIUS.lg,
+    backgroundColor: 'rgba(255,255,255,0.66)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.07)',
+    padding: 10,
+    alignItems: 'center',
+  },
+  modeCardWrapActive: {
+    backgroundColor: '#fff',
+    borderColor: 'rgba(79,122,100,0.2)',
+    ...SHADOWS.small,
+  },
+  modeArt: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  moreArt: {
+    backgroundColor: COLORS.surfaceContainerHigh,
+  },
+  modeLabel: {
+    fontSize: 14,
+    fontFamily: FONT.semiBold,
+    color: COLORS.onSurface,
+    textAlign: 'center',
+  },
+  modeSubLabel: {
+    fontSize: 11,
+    fontFamily: FONT.medium,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  timerSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
+  },
+  timerButton: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.ambient,
+  },
+  timerButtonInner: {
+    width: 136,
+    height: 136,
+    borderRadius: 68,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  soundBtnActive: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primaryFixed,
-    borderWidth: 2,
-    borderColor: '#fff',
-    ...SHADOWS.figmaButton,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+  timerButtonText: {
+    fontSize: 13,
+    fontFamily: FONT.bold,
+    color: COLORS.primary,
+    marginTop: 4,
   },
-  soundLabel: {
-    fontSize: 11,
+  timerButtonTextActive: {
+    color: '#fff',
+  },
+  timerCountdown: {
+    fontSize: 26,
+    fontFamily: FONT.bold,
+    color: '#fff',
+    marginTop: 4,
+  },
+  timerCaption: {
+    fontSize: 13,
     fontFamily: FONT.medium,
     color: COLORS.onSurfaceVariant,
-    marginTop: 4,
-    opacity: 0.7,
+    marginTop: SPACING.sm,
+  },
+  soundRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: SPACING.lg,
+  },
+  soundWrap: {
+    minWidth: 86,
+    minHeight: 44,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(255,255,255,0.68)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  soundWrapActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    ...SHADOWS.small,
+  },
+  soundLabel: {
+    fontSize: 12,
+    fontFamily: FONT.semiBold,
+    color: COLORS.onSurfaceVariant,
   },
   soundLabelActive: {
-    color: COLORS.primary,
-    opacity: 1,
-    fontFamily: FONT.semiBold,
+    color: COLORS.onPrimary,
   },
-  soundDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.primary,
-    marginTop: 6,
-    opacity: 0,
-  },
-  soundDotActive: {
-    opacity: 1,
-  },
-  // Player
   playerContainer: {
-    minHeight: 120,
+    minHeight: 80,
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: SPACING.containerMargin,

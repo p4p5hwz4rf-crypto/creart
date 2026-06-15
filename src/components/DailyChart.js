@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { COLORS, SPACING } from '../theme';
+import { COLORS, FONT, RADIUS, SHADOWS, SPACING } from '../theme';
 
 const MODE_COLORS = {
   deep_breathing: COLORS.deep_breathing,
@@ -107,18 +107,38 @@ export default function DailyChart({ monthStats }) {
 }
 
 const styles = StyleSheet.create({
-  container: { marginTop: SPACING.lg, paddingHorizontal: SPACING.lg },
-  title: { fontSize: 22, fontWeight: '300', color: COLORS.textPrimary, marginBottom: 6, letterSpacing: 2 },
-  subtitle: { fontSize: 12, color: COLORS.textLight, marginBottom: SPACING.lg, lineHeight: 18 },
+  container: {
+    marginTop: SPACING.lg,
+    marginHorizontal: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.xl,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
+    ...SHADOWS.figmaCard,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: FONT.bold,
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 12,
+    fontFamily: FONT.regular,
+    color: COLORS.textLight,
+    marginBottom: SPACING.lg,
+    lineHeight: 18,
+  },
   chartScroll: { maxHeight: 220 },
   chartArea: { flexDirection: 'row', alignItems: 'flex-end', paddingBottom: SPACING.sm, gap: 14, minWidth: '100%' },
   barColumn: { alignItems: 'center', width: 28 },
-  barBg: { width: 20, backgroundColor: COLORS.divider, borderRadius: 6, overflow: 'hidden' },
-  dayLabel: { fontSize: 10, color: COLORS.textLight, marginTop: 8 },
-  emptyText: { fontSize: 13, color: COLORS.textLight, marginLeft: SPACING.sm },
+  barBg: { width: 20, backgroundColor: COLORS.surfaceContainerHigh, borderRadius: 6, overflow: 'hidden' },
+  dayLabel: { fontSize: 10, fontFamily: FONT.medium, color: COLORS.textLight, marginTop: 8 },
+  emptyText: { fontSize: 13, fontFamily: FONT.medium, color: COLORS.textLight, marginLeft: SPACING.sm },
   legend: { flexDirection: 'row', flexWrap: 'wrap', marginTop: SPACING.xl, gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, color: COLORS.textSecondary },
-  legendTime: { fontSize: 11, color: COLORS.textLight },
+  legendText: { fontSize: 12, fontFamily: FONT.medium, color: COLORS.textSecondary },
+  legendTime: { fontSize: 11, fontFamily: FONT.medium, color: COLORS.textLight },
 });

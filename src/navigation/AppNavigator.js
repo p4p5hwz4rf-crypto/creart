@@ -13,8 +13,8 @@ const Tab = createBottomTabNavigator();
 const TAB_CONFIG = {
   Therapy: {
     label: '音疗',
-    icon: 'music-note',
-    inactiveIcon: 'music-note',
+    icon: 'graphic-eq',
+    inactiveIcon: 'graphic-eq',
   },
   Diary: {
     label: '日记',
@@ -32,25 +32,22 @@ function TabIcon({ focused, routeName }) {
   const config = TAB_CONFIG[routeName];
   if (!config) return null;
 
-  const iconName = focused ? config.icon : config.inactiveIcon;
-  const activeBg = routeName === 'Profile' ? COLORS.primary : COLORS.primaryFixed;
-  const activeIconColor = routeName === 'Profile' ? COLORS.onPrimary : COLORS.onPrimaryFixedVariant;
-
   return (
-    <View style={[styles.tabItem, focused && { backgroundColor: activeBg, ...SHADOWS.small }]}>
+    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
       <MaterialIcons
-        name={iconName}
+        name={focused ? config.icon : config.inactiveIcon}
         size={22}
-        color={focused ? activeIconColor : COLORS.onSurfaceVariant}
-        style={{ opacity: focused ? 1 : 0.5 }}
+        color={focused ? COLORS.onPrimary : COLORS.onSurfaceVariant}
       />
+      {focused && <Text style={styles.tabLabel}>{config.label}</Text>}
     </View>
   );
 }
 
-function TabBarButton({ onPress, children, style }) {
+function TabBarButton({ onPress, children, style, accessibilityState }) {
   const rippleScale = useRef(new Animated.Value(0)).current;
   const rippleOpacity = useRef(new Animated.Value(0)).current;
+  const focused = accessibilityState?.selected;
 
   const handlePressIn = () => {
     rippleScale.setValue(0);
@@ -58,13 +55,13 @@ function TabBarButton({ onPress, children, style }) {
     Animated.parallel([
       Animated.timing(rippleScale, {
         toValue: 1,
-        duration: 380,
+        duration: 420,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(rippleOpacity, {
         toValue: 0,
-        duration: 380,
+        duration: 420,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -72,12 +69,16 @@ function TabBarButton({ onPress, children, style }) {
   };
 
   return (
-    <Pressable onPress={onPress} onPressIn={handlePressIn} style={[style, styles.tabButtonWrap]}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      style={[style, styles.tabButtonWrap, focused && styles.tabButtonWrapActive]}
+    >
       <Animated.View
         style={[
           styles.ripple,
           {
-            transform: [{ scale: rippleScale.interpolate({ inputRange: [0, 1], outputRange: [0.5, 3.2] }) }],
+            transform: [{ scale: rippleScale.interpolate({ inputRange: [0, 1], outputRange: [0.5, 3] }) }],
             opacity: rippleOpacity,
           },
         ]}
@@ -88,7 +89,10 @@ function TabBarButton({ onPress, children, style }) {
 }
 
 const tabBarBackground = () => (
-  <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
+  <View style={StyleSheet.absoluteFill}>
+    <BlurView intensity={46} tint="light" style={StyleSheet.absoluteFill} />
+    <View style={styles.tabBarTint} />
+  </View>
 );
 
 export default function AppNavigator() {
@@ -115,32 +119,54 @@ export default function AppNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 88,
-    backgroundColor: 'rgba(244,251,248,0.5)',
+    right: 18,
+    bottom: 18,
+    left: 18,
+    height: 74,
+    backgroundColor: 'rgba(255,255,255,0.72)',
     borderTopWidth: 0,
-    borderTopLeftRadius: RADIUS.xxl,
-    borderTopRightRadius: RADIUS.xxl,
-    ...SHADOWS.figmaTabBar,
-    paddingHorizontal: 40,
-    paddingBottom: 12,
-    elevation: 0,
+    borderRadius: RADIUS.xxl,
+    paddingHorizontal: 10,
+    paddingBottom: 0,
     overflow: 'hidden',
+    ...SHADOWS.figmaTabBar,
+  },
+  tabBarTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(247,251,247,0.66)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
+    borderRadius: RADIUS.xxl,
   },
   tabButtonWrap: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 74,
+  },
+  tabButtonWrapActive: {
+    flex: 1.25,
   },
   tabItem: {
+    minWidth: 48,
+    height: 46,
+    borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.full,
     zIndex: 2,
+  },
+  tabItemActive: {
+    minWidth: 92,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    ...SHADOWS.small,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontFamily: FONT.semiBold,
+    color: COLORS.onPrimary,
   },
   ripple: {
     position: 'absolute',

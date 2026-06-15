@@ -6,7 +6,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORS, SPACING, SHADOWS, RADIUS, FONT } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { COLORS, SPACING, SHADOWS, RADIUS, FONT, SCREEN_GRADIENT } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import {
   getDiaryEntries, saveDiaryEntry, getDailyStats, getDiaryItems,
@@ -188,18 +190,21 @@ export default function DiaryScreen() {
   const userAvatar = user?.avatarUri || 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0NgM7TiEvrukEVuVY5ylj7xMP76FFVHqwJjLfCNqRJt6fZZmC-Gw9jyO4lsWcyGjrONS4_GydYu0qXv_I2LFt-pg127qS4F8S08P74eRv2VMYDqlS5lqm4zWlfwAI04RiUVWtMMeNjlKQ1k0S20U7QqqgN-oR9OO_Siflxbm-VBPJsICiZKpTRsI4HHjcCOo0zWCf5QfwblCQgXsw85rxrWk_JDO_C4ksu9oHUcv91Q5eVgWjQ8fujSXTiHNbB-x3KFV9X9OIGQ';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient colors={SCREEN_GRADIENT} style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 顶部 Header */}
-        <View style={styles.header}>
-          <View style={styles.logoRow}>
-            <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-            <Text style={styles.logoText}>数字静修所</Text>
+        <BlurView intensity={34} tint="light" style={styles.header}>
+          <View style={styles.headerInner}>
+            <View style={styles.logoRow}>
+              <MaterialIcons name="spa" size={20} color={COLORS.primary} />
+              <Text style={styles.logoText}>心灵疗愈室——让情绪流动</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} style={styles.headerIconBtn}>
+              <MaterialIcons name="search" size={22} color={COLORS.onSurfaceVariant} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity activeOpacity={0.7}>
-            <MaterialIcons name="search" size={22} color={COLORS.onSurfaceVariant} />
-          </TouchableOpacity>
-        </View>
+        </BlurView>
 
         {/* 年月选择器 */}
         <View style={styles.monthSelector}>
@@ -208,7 +213,7 @@ export default function DiaryScreen() {
           </TouchableOpacity>
           <View style={styles.monthTextWrap}>
             <Text style={styles.monthText}>
-              {new Date(year, month).toLocaleString('en-US', { month: 'long' })} {year}
+              {year}年 {month + 1}月
             </Text>
             <Text style={styles.monthSub}>年度概览</Text>
           </View>
@@ -314,7 +319,6 @@ export default function DiaryScreen() {
               <Text style={styles.infoCardLabel}>记录心情</Text>
               <View style={styles.pulseDot} />
             </View>
-            <View style={styles.cardGlow} />
           </TouchableOpacity>
 
           {/* Item 7: 今日待办 */}
@@ -330,7 +334,6 @@ export default function DiaryScreen() {
             <Text style={styles.infoCardLabel}>
               {todoList.filter(t => t.done).length}/{todoList.length} 完成
             </Text>
-            <View style={styles.cardGlow} />
           </TouchableOpacity>
         </View>
 
@@ -538,37 +541,60 @@ export default function DiaryScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+  },
+  safeArea: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: SPACING.containerMargin,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xxl,
+    paddingTop: 80,
+    paddingBottom: 138,
   },
   // 顶部
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 40,
+    height: 64,
+    justifyContent: 'flex-end',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(79,122,100,0.06)',
+  },
+  headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.containerMargin,
+  },
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
   logoText: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: FONT.semiBold,
-    fontStyle: 'italic',
     color: COLORS.primary,
-    letterSpacing: -0.5,
   },
   // 年月选择器
   monthSelector: {
@@ -576,12 +602,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderRadius: RADIUS.xl,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
   },
   arrowBtn: {
     width: 36,
     height: 36,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surfaceContainer,
+    borderRadius: RADIUS.DEFAULT,
+    backgroundColor: COLORS.surfaceContainerLow,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -591,9 +622,8 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 20,
-    fontFamily: FONT.semiBold,
+    fontFamily: FONT.bold,
     color: COLORS.onSurface,
-    letterSpacing: -0.2,
   },
   monthSub: {
     fontSize: 11,
@@ -601,17 +631,16 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     opacity: 0.6,
     marginTop: 2,
-    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   // 日历
   calendarCard: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     ...SHADOWS.figmaCard,
     borderWidth: 1,
-    borderColor: 'rgba(194,200,194,0.1)',
+    borderColor: 'rgba(79,122,100,0.09)',
     marginBottom: SPACING.xl,
   },
   weekRow: {
@@ -647,8 +676,9 @@ const styles = StyleSheet.create({
   },
   // Item 5: 过去日期有记录 → 加深圆形
   dayCircleHasEntry: {
-    backgroundColor: COLORS.primary,
-    opacity: 0.55,
+    backgroundColor: COLORS.primaryContainer,
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.18)',
   },
   dayCircleSelected: {
     backgroundColor: COLORS.primary,
@@ -668,7 +698,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT.semiBold,
   },
   dayNumHasEntry: {
-    color: '#fff',
+    color: COLORS.primary,
     fontFamily: FONT.semiBold,
   },
   dayNumToday: {
@@ -684,8 +714,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: FONT.semiBold,
-    color: COLORS.primary,
+    fontFamily: FONT.bold,
+    color: COLORS.onSurface,
     marginBottom: SPACING.md,
   },
   yesterdayRow: {
@@ -703,12 +733,12 @@ const styles = StyleSheet.create({
   },
   bubbleCard: {
     flex: 1,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     ...SHADOWS.figmaCard,
     borderWidth: 1,
-    borderColor: 'rgba(194,200,194,0.1)',
+    borderColor: 'rgba(79,122,100,0.09)',
   },
   bubbleText: {
     fontSize: 15,
@@ -742,8 +772,8 @@ const styles = StyleSheet.create({
   infoCardTertiary: {
     flex: 1,
     height: 160,
-    backgroundColor: COLORS.tertiaryFixed,
-    borderRadius: 32,
+    backgroundColor: COLORS.tertiaryContainer,
+    borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     justifyContent: 'space-between',
     ...SHADOWS.small,
@@ -753,8 +783,8 @@ const styles = StyleSheet.create({
   infoCardSecondary: {
     flex: 1,
     height: 160,
-    backgroundColor: COLORS.secondaryFixed,
-    borderRadius: 32,
+    backgroundColor: COLORS.secondaryContainer,
+    borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     justifyContent: 'space-between',
     ...SHADOWS.small,
@@ -763,7 +793,7 @@ const styles = StyleSheet.create({
   },
   infoCardTitle: {
     fontSize: 18,
-    fontFamily: FONT.semiBold,
+    fontFamily: FONT.bold,
     color: COLORS.onSurface,
   },
   infoCardLabelRow: {
@@ -774,7 +804,6 @@ const styles = StyleSheet.create({
   infoCardLabel: {
     fontSize: 11,
     fontFamily: FONT.semiBold,
-    letterSpacing: 1,
     color: COLORS.onSurfaceVariant,
     textTransform: 'uppercase',
   },
@@ -783,16 +812,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: COLORS.onTertiaryFixedVariant,
-  },
-  cardGlow: {
-    position: 'absolute',
-    right: -20,
-    bottom: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    opacity: 0.5,
   },
   // Date detail
   dateDetail: {
@@ -827,7 +846,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: SPACING.lg,
-    bottom: 100,
+    bottom: 112,
     width: 56,
     height: 56,
     borderRadius: RADIUS.full,
@@ -839,7 +858,7 @@ const styles = StyleSheet.create({
   // Happy moments modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(22,29,27,0.35)',
+    backgroundColor: 'rgba(24,32,29,0.42)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -849,10 +868,12 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     paddingBottom: SPACING.xxl,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
   },
   modalTitle: {
-    fontSize: 16,
-    fontFamily: FONT.semiBold,
+    fontSize: 19,
+    fontFamily: FONT.bold,
     color: COLORS.onSurface,
     marginBottom: SPACING.sm,
   },
@@ -891,7 +912,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.DEFAULT,
     paddingHorizontal: 14,
     fontSize: 14,
     fontFamily: FONT.regular,
@@ -900,7 +921,7 @@ const styles = StyleSheet.create({
   happyAddBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: RADIUS.DEFAULT,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -917,7 +938,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.DEFAULT,
     backgroundColor: COLORS.surfaceContainerLow,
     gap: 4,
   },
@@ -932,7 +953,7 @@ const styles = StyleSheet.create({
   modalInput: {
     height: 100,
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.DEFAULT,
     padding: SPACING.md,
     fontSize: 15,
     fontFamily: FONT.regular,
@@ -942,7 +963,7 @@ const styles = StyleSheet.create({
   },
   prevMoods: {
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.DEFAULT,
     padding: SPACING.md,
     marginBottom: SPACING.md,
   },
@@ -1007,7 +1028,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.DEFAULT,
     paddingHorizontal: 14,
     fontSize: 14,
     fontFamily: FONT.regular,
@@ -1016,7 +1037,7 @@ const styles = StyleSheet.create({
   todoAddBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: RADIUS.DEFAULT,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1041,7 +1062,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: 24,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.DEFAULT,
   },
   modalBtnTextPrimary: {
     color: COLORS.onPrimary,

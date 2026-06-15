@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { COLORS, SPACING, SHADOWS, RADIUS, FONT } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, SHADOWS, RADIUS, FONT, SCREEN_GRADIENT } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,8 +16,6 @@ import {
   getGoals, saveGoal, removeGoal, getMonthStats, getMonthTotalTime,
   getMotto, saveMotto,
 } from '../storage';
-
-const AVATAR_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQ199MwR4pEsOeshKXcVtn4XZxqPiKs7dw9arXFcbShr5rFf0lS78jlFAcJgrY2M4yTtmWWj_QeOgB6gYF3xUxyjrTGxR_xIgpQEvacmPISHG1bmWd-aFzGlpfq6baUGHoGt-bn_lcHwS27I_ls6fz987RsuHWIOfboxFN4N-vCCtAzasqcvpfOoECBjzyQECvBJ7ZWhBhB3r1syO1AN1KZWdwTLVH0A1vSE7WBM3RAEn0RmF7ybczZWIhFqBtVDy8kdUtbmFk9A';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, updateName, updateAvatar } = useAuth();
@@ -149,17 +148,18 @@ export default function ProfileScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  const userAvatarUri = user?.avatarUri || AVATAR_URL;
+  const userAvatarUri = user?.avatarUri;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient colors={SCREEN_GRADIENT} style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* 顶部 Blur Header */}
         <BlurView intensity={30} tint="light" style={styles.header}>
           <View style={styles.headerInner}>
             <View style={styles.logoRow}>
               <MaterialIcons name="spa" size={20} color={COLORS.primary} />
-              <Text style={styles.logoText}>数字静修所</Text>
+              <Text style={styles.logoText}>心灵疗愈室——让情绪流动</Text>
             </View>
             <TouchableOpacity activeOpacity={0.7}>
               <MaterialIcons name="more-vert" size={22} color={COLORS.onSurfaceVariant} />
@@ -171,10 +171,21 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.profileHeader}>
           <TouchableOpacity onPress={pickImage} activeOpacity={0.9}>
             <View style={styles.avatarWrap}>
-              <Image
-                source={{ uri: userAvatarUri }}
-                style={styles.avatarImg}
-              />
+              {userAvatarUri ? (
+                <Image
+                  source={{ uri: userAvatarUri }}
+                  style={styles.avatarImg}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[COLORS.primaryContainer, COLORS.tertiaryContainer]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.avatarImg}
+                >
+                  <MaterialIcons name="self-improvement" size={44} color={COLORS.primary} />
+                </LinearGradient>
+              )}
               <View style={styles.editBadge}>
                 <MaterialIcons name="edit" size={14} color={COLORS.onPrimary} />
               </View>
@@ -348,18 +359,21 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+  },
+  safeArea: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: SPACING.containerMargin,
     paddingTop: 80,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 138,
   },
   // 顶部 Header
   header: {
@@ -372,7 +386,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(114,121,115,0.06)',
+    borderBottomColor: 'rgba(79,122,100,0.06)',
   },
   headerInner: {
     flexDirection: 'row',
@@ -383,19 +397,23 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
   logoText: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: FONT.semiBold,
-    fontStyle: 'italic',
     color: COLORS.primary,
-    letterSpacing: -0.5,
   },
   // 头像区域
   profileHeader: {
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
+    padding: SPACING.lg,
     marginBottom: SPACING.xl,
+    ...SHADOWS.figmaCard,
   },
   avatarWrap: {
     position: 'relative',
@@ -404,10 +422,12 @@ const styles = StyleSheet.create({
   avatarImg: {
     width: 120,
     height: 120,
-    borderRadius: RADIUS.full,
+    borderRadius: 60,
     borderWidth: 4,
     borderColor: COLORS.surfaceContainerHighest,
     ...SHADOWS.figmaAvatar,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editBadge: {
     position: 'absolute',
@@ -427,7 +447,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: FONT.semiBold,
     color: COLORS.onSurface,
-    letterSpacing: -0.3,
   },
   nameInput: {
     fontSize: 24,
@@ -470,7 +489,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONT.medium,
     color: COLORS.secondary,
-    letterSpacing: 1,
     marginBottom: SPACING.sm,
     paddingLeft: SPACING.sm,
     textTransform: 'uppercase',
@@ -486,8 +504,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondaryContainer,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: RADIUS.full,
-    ...SHADOWS.figmaAvatar,
+    borderRadius: RADIUS.DEFAULT,
+    ...SHADOWS.small,
   },
   chipText: {
     fontSize: 13,
@@ -507,7 +525,7 @@ const styles = StyleSheet.create({
   chipInput: {
     height: 40,
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.DEFAULT,
     paddingHorizontal: 16,
     fontSize: 13,
     fontFamily: FONT.regular,
@@ -519,7 +537,7 @@ const styles = StyleSheet.create({
   chipAddBtn: {
     width: 40,
     height: 40,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.DEFAULT,
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -528,11 +546,11 @@ const styles = StyleSheet.create({
   },
   // 菜单卡片
   menuCard: {
-    backgroundColor: 'rgba(238,245,242,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.72)',
     borderRadius: RADIUS.xl,
     padding: 8,
     borderWidth: 1,
-    borderColor: 'rgba(70,98,83,0.05)',
+    borderColor: 'rgba(79,122,100,0.08)',
     ...SHADOWS.figmaCard,
   },
   menuItem: {
@@ -599,7 +617,7 @@ const styles = StyleSheet.create({
   // 弹窗
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(22,29,27,0.35)',
+    backgroundColor: 'rgba(24,32,29,0.42)',
     justifyContent: 'center',
     padding: SPACING.lg,
   },
@@ -692,25 +710,26 @@ const styles = StyleSheet.create({
   },
   // 反馈弹窗 — 无浅色背景
   feedbackContent: {
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: RADIUS.xxl,
     padding: SPACING.lg,
+    ...SHADOWS.large,
   },
   feedbackTitle: {
     fontSize: 18,
     fontFamily: FONT.semiBold,
-    color: '#fff',
+    color: COLORS.onSurface,
     marginBottom: SPACING.lg,
     textAlign: 'center',
   },
   feedbackInput: {
     height: 120,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
     fontSize: 15,
     fontFamily: FONT.regular,
-    color: '#fff',
+    color: COLORS.onSurface,
     textAlignVertical: 'top',
     marginBottom: SPACING.md,
   },
@@ -719,7 +738,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   feedbackCancelText: {
-    color: '#fff',
+    color: COLORS.onSurfaceVariant,
     fontSize: 15,
     fontFamily: FONT.medium,
     opacity: 0.8,

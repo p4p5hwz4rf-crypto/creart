@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system';
-import { COLORS } from '../theme';
+import { COLORS, FONT, SHADOWS, RADIUS } from '../theme';
 
 const bowlModule = require('../../assets/sounds/bowl.mp3');
 
-export default function BowlSound({ active, onComplete, defaultDuration, color }) {
-  const [remaining, setRemaining] = useState(defaultDuration);
+const PRESETS = [1, 3, 5, 10];
+
+export default function BowlSound({ active, onComplete, duration, onDurationChange, color }) {
+  const totalSeconds = duration || 60;
+  const durationMin = Math.floor(totalSeconds / 60);
+  const [remaining, setRemaining] = useState(totalSeconds);
   const [localUri, setLocalUri] = useState(null);
   const timerRef = useRef(null);
   const rippleIntervalRef = useRef(null);
+  const prevDurationRef = useRef(totalSeconds);
+  const pausedRemainingRef = useRef(totalSeconds);
   const ripple1 = useRef(new Animated.Value(0)).current;
   const ripple2 = useRef(new Animated.Value(0)).current;
   const ripple3 = useRef(new Animated.Value(0)).current;
@@ -39,10 +45,15 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
   }, []);
 
   useEffect(() => {
+    const durationChanged = prevDurationRef.current !== totalSeconds;
+
     if (active) {
-      // Use cached URI if available
-      if (localUri) {
-        try { player.replace({ uri: localUri }); } catch (e) {}
+      prevDurationRef.current = totalSeconds;
+      const startFrom = durationChanged ? totalSeconds : pausedRemainingRef.current;
+      if (durationChanged) {
+        try { player.stop(); } catch (e) {}
+        const src = localUri ? { uri: localUri } : bowlModule;
+        try { player.replace(src); } catch (e) {}
       }
       player.loop = true;
       player.volume = 0.7;
@@ -54,11 +65,13 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
         startRipple();
       }, 8000);
 
-      setRemaining(defaultDuration);
+      setRemaining(startFrom);
       timerRef.current = setInterval(() => {
         setRemaining(r => {
-          if (r <= 1) { clearInterval(timerRef.current); onComplete && onComplete(defaultDuration); return 0; }
-          return r - 1;
+          const next = r - 1;
+          pausedRemainingRef.current = Math.max(0, next);
+          if (next <= 0) { clearInterval(timerRef.current); onComplete && onComplete(totalSeconds); return 0; }
+          return next;
         });
       }, 1000);
     } else {
@@ -73,7 +86,7 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
       stopRipple();
       try { player.pause(); } catch (e) {}
     };
-  }, [active, localUri]);
+  }, [active, localUri, totalSeconds]);
 
   const startRipple = () => {
     const create = (anim, delay) => {
@@ -106,6 +119,22 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
 
   return (
     <View style={styles.container}>
+      {!active && (
+        <View style={styles.presets}>
+          <Text style={styles.label}>时长（分钟）</Text>
+          <View style={styles.presetRow}>
+            {PRESETS.map(m => (
+              <TouchableOpacity
+                key={m}
+                onPress={() => onDurationChange && onDurationChange(m * 60)}
+                style={[styles.presetBtn, durationMin === m && { backgroundColor: color, borderColor: color }]}
+              >
+                <Text style={[styles.presetText, durationMin === m && { color: '#fff' }]}>{m}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
       <View style={styles.bowlArea}>
         <Animated.View style={[styles.ripple, rippleStyle(ripple1), { borderColor: color }]} />
         <Animated.View style={[styles.ripple, rippleStyle(ripple2), { borderColor: color }]} />
@@ -120,10 +149,61 @@ export default function BowlSound({ active, onComplete, defaultDuration, color }
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center' },
-  bowlArea: { width: 160, height: 160, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  container: { alignItems: 'center', width: '100%' },
+  bowlArea: { width: 160, height: 160, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   ripple: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 1.5 },
-  bowl: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
-  bowlText: { color: '#fff', fontSize: 20, fontWeight: '600', letterSpacing: 2 },
-  hint: { marginTop: 12, fontSize: 12, color: COLORS.textLight, letterSpacing: 0.5 },
+  bowl: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.5)',
+    ...SHADOWS.small,
+  },
+  bowlText: {
+    color: '#fff',
+    fontSize: 20,
+    fontFamily: FONT.bold,
+  },
+  hint: {
+    marginTop: 14,
+    fontSize: 12,
+    fontFamily: FONT.medium,
+    color: COLORS.textLight,
+  },
+  presets: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 14,
+    borderRadius: RADIUS.xl,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
+  },
+  label: {
+    fontSize: 12,
+    fontFamily: FONT.semiBold,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  presetRow: { flexDirection: 'row', gap: 10 },
+  presetBtn: {
+    width: 50,
+    height: 44,
+    borderRadius: RADIUS.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    ...SHADOWS.small,
+  },
+  presetText: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    fontFamily: FONT.bold,
+  },
 });

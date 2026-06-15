@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
 import { Asset } from 'expo-asset';
-import { COLORS } from '../theme';
+import { COLORS, FONT, RADIUS, SHADOWS } from '../theme';
 
 const PRESETS = [5, 10, 30, 60];
 const audioModule = require('../../assets/sounds/asmr.mp3');
@@ -14,7 +14,8 @@ export default function ASMRPlayer({ active, onComplete, duration, onDurationCha
   const [localUri, setLocalUri] = useState(null);
   const [loading, setLoading] = useState(true);
   const timerRef = useRef(null);
-  // Always init with direct require — never null (matches working components)
+  const prevDurationRef = useRef(totalSeconds);
+  const pausedRemainingRef = useRef(totalSeconds);
   const player = useAudioPlayer(audioModule);
 
   // Download to device cache in background for smooth looping
@@ -36,26 +37,35 @@ export default function ASMRPlayer({ active, onComplete, duration, onDurationCha
   }, []);
 
   useEffect(() => {
+    const durationChanged = prevDurationRef.current !== totalSeconds;
+
     if (active) {
+      prevDurationRef.current = totalSeconds;
       const startTime = Date.now();
-      // Use cached local file if ready, otherwise direct module
-      const src = localUri ? { uri: localUri } : audioModule;
-      try { player.replace(src); } catch (e) {}
+      const startFrom = durationChanged ? totalSeconds : pausedRemainingRef.current;
+
+      if (durationChanged) {
+        try { player.stop(); } catch (e) {}
+        const src = localUri ? { uri: localUri } : audioModule;
+        try { player.replace(src); } catch (e) {}
+      }
       player.loop = true;
       player.volume = 0.5;
       try { player.play(); } catch (e) {}
-      setRemaining(totalSeconds);
+      setRemaining(startFrom);
 
       timerRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const r = totalSeconds - elapsed;
+        const r = startFrom - elapsed;
         if (r <= 0) {
           clearInterval(timerRef.current);
           setRemaining(0);
+          pausedRemainingRef.current = 0;
           try { player.pause(); } catch (e) {}
           onComplete && onComplete(totalSeconds);
         } else {
           setRemaining(r);
+          pausedRemainingRef.current = r;
         }
       }, 250);
     } else {
@@ -95,13 +105,43 @@ export default function ASMRPlayer({ active, onComplete, duration, onDurationCha
 
 const styles = StyleSheet.create({
   container: { alignItems: 'center', width: '100%' },
-  presets: { alignItems: 'center', marginBottom: 20 },
-  label: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 10 },
-  presetRow: { flexDirection: 'row', gap: 12 },
-  presetBtn: {
-    width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.divider,
+  presets: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 14,
+    borderRadius: RADIUS.xl,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
   },
-  presetText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
-  hint: { marginTop: 14, fontSize: 12, color: COLORS.textLight },
+  label: {
+    fontSize: 12,
+    fontFamily: FONT.semiBold,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  presetRow: { flexDirection: 'row', gap: 10 },
+  presetBtn: {
+    width: 50,
+    height: 44,
+    borderRadius: RADIUS.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    ...SHADOWS.small,
+  },
+  presetText: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    fontFamily: FONT.bold,
+  },
+  hint: {
+    marginTop: 14,
+    fontSize: 12,
+    fontFamily: FONT.medium,
+    color: COLORS.textLight,
+  },
 });

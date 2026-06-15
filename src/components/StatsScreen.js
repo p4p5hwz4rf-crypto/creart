@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, SIZES, SPACING, SHADOWS } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, FONT, RADIUS, SCREEN_GRADIENT, SIZES, SPACING, SHADOWS } from '../theme';
 import { MONTH_NAMES } from '../constants';
 import { getMonthStats, getMonthTotalTime, clearAllStats } from '../storage';
 import DailyChart from './DailyChart';
@@ -36,7 +37,8 @@ export default function StatsScreen() {
   const activeDays = Object.keys(monthStats).length;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <LinearGradient colors={SCREEN_GRADIENT} style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 顶部 —— 大量留白 */}
         <View style={styles.header}>
@@ -86,29 +88,33 @@ export default function StatsScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
   header: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl, paddingBottom: SPACING.lg },
-  greeting: { fontSize: SIZES.huge, fontWeight: '300', color: COLORS.textPrimary, letterSpacing: 6 },
+  greeting: { fontSize: SIZES.huge, fontFamily: FONT.bold, color: COLORS.textPrimary },
   monthSelector: {
     flexDirection: 'row', alignItems: 'center', marginTop: SPACING.md,
-    backgroundColor: COLORS.card, alignSelf: 'flex-start',
-    paddingHorizontal: SPACING.md, paddingVertical: 10, borderRadius: 20, ...SHADOWS.small,
+    backgroundColor: 'rgba(255,255,255,0.72)', alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.md, paddingVertical: 10, borderRadius: RADIUS.DEFAULT, ...SHADOWS.small,
   },
   arrow: { fontSize: 16, color: COLORS.textSecondary, paddingHorizontal: 10 },
-  monthText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500', marginHorizontal: 6 },
+  monthText: { fontSize: 14, color: COLORS.textPrimary, fontFamily: FONT.semiBold, marginHorizontal: 6 },
   overview: {
     flexDirection: 'row', paddingHorizontal: SPACING.lg, marginTop: SPACING.lg, gap: 12,
   },
   card: {
-    flex: 1, backgroundColor: COLORS.card, borderRadius: 20,
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.72)', borderRadius: RADIUS.lg,
     paddingVertical: SPACING.lg, alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(79,122,100,0.08)',
   },
-  cardValue: { fontSize: 24, fontWeight: '300', color: COLORS.textPrimary, letterSpacing: 1 },
-  cardLabel: { fontSize: 11, color: COLORS.textLight, marginTop: 6, letterSpacing: 0.5 },
+  cardValue: { fontSize: 24, fontFamily: FONT.bold, color: COLORS.textPrimary },
+  cardLabel: { fontSize: 11, fontFamily: FONT.medium, color: COLORS.textLight, marginTop: 6 },
   footer: { alignItems: 'center', paddingVertical: SPACING.xxl, paddingHorizontal: SPACING.lg },
   footerText: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22 },
   clearText: { fontSize: 11, color: COLORS.textLight, marginTop: SPACING.lg, textDecorationLine: 'underline' },

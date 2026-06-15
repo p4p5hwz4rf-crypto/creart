@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useAudioPlayer } from 'expo-audio';
 import { Asset } from 'expo-asset';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../theme';
+import { COLORS, FONT } from '../theme';
 
 const TOTAL_SECONDS = 60;
 const bellModule = require('../../assets/sounds/bell.wav');
@@ -17,28 +17,18 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
   const sessionTimerRef = useRef(null);
   const player = useAudioPlayer(bellModule);
 
-  // Preload & cache bell locally for instant phase-change chimes
+  // Preload bell asset to local cache
   useEffect(() => {
     let cancelled = false;
     async function prepare() {
-      // Download to device cache
       try {
         const asset = Asset.fromModule(bellModule);
         await asset.downloadAsync();
         if (!cancelled && asset.localUri) {
-          try { player.replace({ uri: asset.localUri }); } catch (e) {}
+          try { await player.replace({ uri: asset.localUri }); } catch (e) {}
         }
-      } catch (e) { /* keep using direct require */ }
-      // Warm up: play briefly at zero volume to force native buffer load
-      player.loop = false;
-      player.volume = 0;
-      try { player.play(); } catch (e) {}
-      // Let it play for a tiny moment then pause — buffer is now hot
-      setTimeout(() => {
-        try { player.pause(); } catch (e) {}
-        player.volume = 0.7;
-        if (!cancelled) setBellReady(true);
-      }, 50);
+      } catch (e) { /* fallback to direct require */ }
+      if (!cancelled) setBellReady(true);
     }
     prepare();
     return () => { cancelled = true; };
@@ -53,13 +43,16 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
     return () => stopSession();
   }, [active]);
 
-  const playBell = () => {
+  const playBell = async () => {
     if (!bellReady) return;
     try {
-      // Seek to start for instant attack
-      player.currentTime = 0;
-      player.play();
-    } catch (e) {}
+      await player.seekTo(0);
+      await player.play();
+    } catch (e) {
+      // fallback: stop + play
+      try { await player.stop(); } catch (_) {}
+      try { await player.play(); } catch (_) {}
+    }
   };
 
   // Use Date.now() reference for precise phase timing (no interval drift)
@@ -148,7 +141,7 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.circle, { transform: [{ scale: scaleAnim }], borderColor: color }]}>
+      <Animated.View style={[styles.circle, { transform: [{ scale: scaleAnim }], borderColor: `${color}55` }]}>
         <Text style={[styles.phaseText, { color }]}>{phaseText[phase]}</Text>
         {active && phaseCountdown > 0 && <Text style={styles.countdown}>{phaseCountdown}</Text>}
       </Animated.View>
@@ -160,11 +153,28 @@ export default function BreathingGuide({ active, onComplete, pattern, color }) {
 const styles = StyleSheet.create({
   container: { alignItems: 'center' },
   circle: {
-    width: 140, height: 140, borderRadius: 70,
-    borderWidth: 2, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    width: 142,
+    height: 142,
+    borderRadius: 71,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  phaseText: { fontSize: 16, fontWeight: '500', letterSpacing: 2 },
-  countdown: { fontSize: 32, fontWeight: '200', color: COLORS.textPrimary, marginTop: 6, letterSpacing: 2 },
-  hint: { marginTop: 20, fontSize: 12, color: COLORS.textLight, letterSpacing: 1 },
+  phaseText: {
+    fontSize: 15,
+    fontFamily: FONT.semiBold,
+  },
+  countdown: {
+    position: 'absolute',
+    bottom: 18,
+    fontSize: 22,
+    fontFamily: FONT.bold,
+    color: COLORS.textPrimary,
+  },
+  hint: {
+    marginTop: 20,
+    fontSize: 12,
+    fontFamily: FONT.medium,
+    color: COLORS.textLight,
+  },
 });
