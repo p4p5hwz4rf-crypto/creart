@@ -1,111 +1,92 @@
-# 🌿 恢复平静治疗室
+# 🌿 心灵疗愈室 · Calm Therapy Room
 
-一款专注于音疗与情绪舒缓的跨平台移动应用。通过深呼吸节拍、自然白噪音、音钵共鸣、ASMR等方式，帮助你缓解紧张、焦虑与失眠。
+一款专注于情绪疗愈的跨平台移动应用。融合深呼吸引导、自然白噪音、音钵共振、ASMR 助眠与冥想，搭配幸福日记、心情追踪、待办管理，构建完整的日常心理健康工具。
 
 ---
 
-## ✨ 功能亮点
+## ✨ 核心功能
 
-| 功能 | 作用 | 默认时长 |
+### 🧘 音疗模式
+
+| 模式 | 作用 | 默认时长 |
 |------|------|----------|
-| 🌬️ 深呼吸 | 跟随节拍吸气-屏息-呼气，缓解紧张 | 1分钟 |
-| 🍃 自然音 | 雨声/森林/海浪，缓解焦虑 | 3分钟 |
-| 🔔 音钵 | 模拟音钵共振，清空大脑杂念 | 1分钟 |
-| 🌙 ASMR | 循环白噪音，自定义时长，助眠 | 10分钟（可调） |
-| ☀️ 冥想 | 白噪音 + 呼吸引导 | 5分钟（可调） |
-| ☁️ 专注 | 持续白噪音，提升注意力 | 30分钟（可调） |
+| 🌬️ 深呼吸 | 跟随节拍吸气-屏息-呼气，缓解紧张 | 1 分钟 |
+| 🍃 自然音 | 雨声 / 森林 / 海浪，缓解焦虑 | 3 分钟 |
+| 🔔 音钵 | 模拟音钵共振，清空杂念 | 1 分钟 |
+| 🌙 ASMR | 循环白噪音，助眠 | 10 分钟（可调） |
+| ☀️ 冥想 | 白噪音 + 呼吸引导 | 5 分钟（可调） |
+| ☁️ 专注 | 持续白噪音，提升注意力 | 30 分钟（可调） |
 
-- **治愈系配色**：每种疗法对应专属情绪色彩
-- **月度统计**：记录每天使用时长，生成情绪色彩柱状图
-- **简洁交互**：底部切换功能，中央一键开启
+- 每种疗法对应专属治愈色系
+- 使用时长自动记录，按日汇总统计
+
+### 📔 幸福日记
+
+- **日历视图**：月历选择日期，查看/记录每日疗愈数据
+- **月度统计卡片**：当月疗愈分钟、日记天数、疗愈天数一目了然
+- **幸福小事**（最少 3 件）：记录每天的小确幸，近 3 天内可编辑
+- **昨日幸福**：聊天气泡样式展示昨天记录，可点击快速记录
+- **当下心情**：选择开心/愤怒/沮丧/伤心，写心情日记（仅当天可记）
+- **今日待办**：日期关联的待办清单，跟随日历切换，仅当天可编辑
+- **日期详情弹窗**：疗愈时长明细 + 幸福小事 + 心情记录汇总
+
+### 👤 个人中心
+
+- **头像与昵称**：点击头像自定义图片，支持恢复默认；点击昵称修改
+- **座右铭**：可编辑个性签名
+- **今年目标**：添加/删除年度目标标签
+- **订阅会员**：首月免费，每月满勤 28 天免续费，未达标可 9.9 元/月续费
+- **意见反馈**：一键发送邮件反馈
+- **月度报告**：本月使用次数、总时长、鼓励语
+
+### 🔐 用户系统
+
+- 邮箱注册 / 登录
+- Google OAuth 登录
+- 数据持久化在设备本地（AsyncStorage）
 
 ---
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+### 环境要求
 
-确保已安装 Node.js（18+），然后在项目目录运行：
+- Node.js 18+
+- Expo Go App（手机预览）或 Android Studio / Xcode（模拟器）
+
+### 安装
 
 ```bash
 cd calm-therapy-room
 npm install
 ```
 
-### 2. 生成音频资源
-
-项目需要本地音频文件（节拍提示音、音钵、白噪音），运行：
-
-```bash
-node src/utils/generateSounds.js
-```
-
-这会在 `assets/sounds/` 下生成：
-- `bell.wav` — 节拍提示音
-- `bowl.wav` — 音钵声
-- `white_noise.wav` — 白噪音
-- `rain.wav` — 雨声
-
-> 💡 你也可以替换成自己搜集的高品质音频，只要保持同名即可。
-
-### 3. 准备图标（可选）
-
-在 `assets/images/` 放入：
-- `icon.png`（1024×1024）
-- `splash.png`（1242×2436）
-- `adaptive-icon.png`（1024×1024）
-
-如果暂时没有，可以放任意图片占位。
-
-### 4. 启动开发服务器
+### 启动
 
 ```bash
 npx expo start
 ```
 
-### 5. 手机预览
+然后用 Expo Go 扫描终端二维码即可在手机上预览。
 
-- **iPhone**: App Store 下载 **Expo Go**，扫描终端二维码
-- **Android**: 应用商店下载 **Expo Go**，扫描终端二维码
-
-或者按 `a` 启动安卓模拟器（需 Android Studio），按 `i` 启动 iOS 模拟器（需 macOS + Xcode）。
-
----
-
-## 📦 打包发布
-
-### Android APK/AAB
-
-```bash
-eas build -p android
-```
-
-或使用 Expo 经典方式：
-
-```bash
-expo prebuild
-cd android
-./gradlew assembleRelease
-```
-
-### iOS
-
-需要 macOS + Xcode：
-
-```bash
-eas build -p ios
-```
+> 按 `a` 启动 Android 模拟器，按 `i` 启动 iOS 模拟器（需 macOS + Xcode）。
 
 ---
 
 ## 🛠 技术栈
 
-- **React Native + Expo** — 跨平台框架
-- **expo-av** — 音频播放
-- **expo-haptics** — 触觉反馈
-- **@react-navigation/bottom-tabs** — 底部导航
-- **AsyncStorage** — 本地数据持久化
-- **react-native-svg** — 统计图表
+| 类别 | 技术 |
+|------|------|
+| 框架 | React Native 0.85 + Expo SDK 56 |
+| 导航 | @react-navigation (Native Stack + Bottom Tabs) |
+| 音频 | expo-audio |
+| 触觉 | expo-haptics |
+| 字体 | @expo-google-fonts/manrope |
+| 图标 | @expo/vector-icons (Material Icons) |
+| 存储 | @react-native-async-storage/async-storage |
+| 动效 | expo-linear-gradient, expo-blur |
+| 图片 | expo-image-picker |
+| 样式 | StyleSheet, 自定义主题系统 |
 
 ---
 
@@ -113,30 +94,44 @@ eas build -p ios
 
 ```
 calm-therapy-room/
-├── App.js                        # 应用入口
-├── app.json                      # Expo 配置
+├── App.js                          # 应用入口，导航根组件，字体加载
+├── app.json                        # Expo 配置
 ├── package.json
 ├── src/
-│   ├── theme.js                  # 治愈系配色
-│   ├── constants.js              # 功能配置
-│   ├── storage.js                # 本地存储/统计
-│   ├── utils/
-│   │   └── generateSounds.js     # 音频生成脚本
+│   ├── theme.js                    # 治愈系配色、间距、阴影、圆角、字体体系
+│   ├── constants.js                # 音疗模式配置、存储键名
+│   ├── storage.js                  # AsyncStorage 数据层（日记/统计/待办/心情/目标/迁移）
+│   ├── context/
+│   │   ├── AuthContext.js           # 认证状态管理（登录/注册/注销/OAuth）
+│   │   └── SubscriptionContext.js   # 订阅状态（首月免费/满勤免续/付费）
 │   ├── navigation/
-│   │   └── AppNavigator.js       # 底部导航
-│   └── components/
-│       ├── TherapyScreen.js      # 主页面
-│       ├── BreathingGuide.js     # 深呼吸
-│       ├── NatureSound.js        # 自然音
-│       ├── BowlSound.js          # 音钵
-│       ├── ASMRPlayer.js         # ASMR
-│       ├── MeditationPlayer.js   # 冥想/专注
-│       ├── StatsScreen.js        # 月度统计
-│       ├── DailyChart.js         # 情绪图表
-│       └── MainButton.js         # 中央按钮
+│   │   └── AppNavigator.js         # 底部 Tab 导航（疗愈/日记/我的）
+│   └── screens/
+│       ├── TherapyScreen.js        # 音疗主页（模式选择 + 播放控制）
+│       ├── DiaryScreen.js          # 幸福日记（日历/统计/昨日幸福/心情/待办）
+│       ├── ProfileScreen.js        # 个人中心（头像/目标/订阅/反馈）
+│       ├── LoginScreen.js          # 登录页
+│       ├── RegisterScreen.js       # 注册页
+│       ├── BreathingGuide.js       # 深呼吸引导
+│       ├── NatureSound.js          # 自然音播放器
+│       ├── BowlSound.js            # 音钵播放器
+│       ├── ASMRPlayer.js           # ASMR 播放器（可调时长）
+│       └── MeditationPlayer.js     # 冥想/专注播放器
 └── assets/
-    ├── sounds/                   # 音频文件（由脚本生成）
-    └── images/                   # 图标与启动屏
+    ├── sounds/                     # 音频资源
+    └── images/                     # 图标与启动屏
+```
+
+---
+
+## 📦 打包发布
+
+```bash
+# Android
+eas build -p android
+
+# iOS（需 macOS + Xcode）
+eas build -p ios
 ```
 
 ---
@@ -145,4 +140,4 @@ calm-therapy-room/
 
 MIT — 自由使用与修改。
 
-祝你使用愉快，心随音静 🌸
+祝使用愉快，心随音静 🌸
