@@ -39,11 +39,10 @@
 - **意见反馈**：一键发送邮件反馈
 - **月度报告**：本月使用次数、总时长、鼓励语
 
-### 🔐 用户系统
+### 💾 数据存储
 
-- 邮箱注册 / 登录
-- Google OAuth 登录
-- 数据持久化在设备本地（AsyncStorage）
+- 纯本地应用，无需注册登录，打开即用
+- 所有数据通过 AsyncStorage 持久化在设备本地
 
 ---
 
@@ -78,7 +77,7 @@ npx expo start
 | 类别 | 技术 |
 |------|------|
 | 框架 | React Native 0.85 + Expo SDK 56 |
-| 导航 | @react-navigation (Native Stack + Bottom Tabs) |
+| 导航 | @react-navigation (Bottom Tabs) |
 | 音频 | expo-audio |
 | 触觉 | expo-haptics |
 | 字体 | @expo-google-fonts/manrope |
@@ -102,7 +101,7 @@ calm-therapy-room/
 │   ├── constants.js                # 音疗模式配置、存储键名
 │   ├── storage.js                  # AsyncStorage 数据层（日记/统计/待办/心情/目标/迁移）
 │   ├── context/
-│   │   ├── AuthContext.js           # 认证状态管理（登录/注册/注销/OAuth）
+│   │   ├── AuthContext.js           # 本地用户管理（昵称/头像持久化）
 │   │   └── SubscriptionContext.js   # 订阅状态（首月免费/满勤免续/付费）
 │   ├── navigation/
 │   │   └── AppNavigator.js         # 底部 Tab 导航（疗愈/日记/我的）
@@ -110,8 +109,6 @@ calm-therapy-room/
 │       ├── TherapyScreen.js        # 音疗主页（模式选择 + 播放控制）
 │       ├── DiaryScreen.js          # 幸福日记（日历/统计/昨日幸福/心情/待办）
 │       ├── ProfileScreen.js        # 个人中心（头像/目标/订阅/反馈）
-│       ├── LoginScreen.js          # 登录页
-│       ├── RegisterScreen.js       # 注册页
 │       ├── BreathingGuide.js       # 深呼吸引导
 │       ├── NatureSound.js          # 自然音播放器
 │       ├── BowlSound.js            # 音钵播放器
