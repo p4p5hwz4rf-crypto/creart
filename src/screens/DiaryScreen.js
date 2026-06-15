@@ -490,102 +490,101 @@ export default function DiaryScreen() {
         </View>
       </Modal>
 
-      {/* ====== 心情日记弹窗 (Item 6) ====== */}
+      {/* ====== 朋友圈风格心情弹窗 (Item 6) ====== */}
       <Modal visible={moodVisible} animationType="slide" transparent onRequestClose={() => { setMoodVisible(false); setShowTodayRecords(false); }}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>当下心情</Text>
-
-            {/* Mood selector */}
-            <View style={styles.moodRow}>
-              {MOODS.map((m) => (
-                <TouchableOpacity
-                  key={m.key}
-                  style={[styles.moodChip, selectedMood === m.key && { backgroundColor: m.color }]}
-                  onPress={() => setSelectedMood(m.key)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.moodEmoji}>{m.emoji}</Text>
-                  <Text style={[styles.moodLabel, selectedMood === m.key && { color: '#fff' }]}>
-                    {m.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <View style={styles.momentsOverlay}>
+          <View style={styles.momentsContainer}>
+            {/* Header */}
+            <View style={styles.momentsHeader}>
+              <Text style={styles.momentsTitle}>你的私人朋友圈</Text>
+              <TouchableOpacity onPress={() => { setMoodVisible(false); setShowTodayRecords(false); }} hitSlop={8}>
+                <MaterialIcons name="close" size={24} color={COLORS.onSurfaceVariant} />
+              </TouchableOpacity>
             </View>
 
-            {/* Image picker */}
-            <TouchableOpacity style={styles.moodImageBtn} onPress={pickMoodImage} activeOpacity={0.7}>
-              {moodImage ? (
-                <Image source={{ uri: moodImage }} style={styles.moodPreviewImg} />
-              ) : (
-                <View style={styles.moodImagePlaceholder}>
-                  <MaterialIcons name="add-photo-alternate" size={28} color={COLORS.outline} />
-                  <Text style={styles.moodImageHint}>添加图片</Text>
+            {/* Compose 区域 */}
+            <View style={styles.momentsCompose}>
+              <View style={styles.momentsComposeRow}>
+                <View style={styles.momentsMoodRow}>
+                  {MOODS.map((m) => (
+                    <TouchableOpacity
+                      key={m.key}
+                      style={[styles.momentsMoodChip, selectedMood === m.key && { backgroundColor: m.color }]}
+                      onPress={() => setSelectedMood(m.key)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                      <Text style={[styles.momentsMoodLabel, selectedMood === m.key && { color: '#fff' }]}>
+                        {m.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={styles.momentsInput}
+                  placeholder="分享此刻的心情..."
+                  placeholderTextColor={COLORS.outline}
+                  value={moodDiary}
+                  onChangeText={setMoodDiary}
+                  multiline
+                />
+              </View>
+
+              {moodImage && (
+                <View style={styles.momentsImgWrap}>
+                  <Image source={{ uri: moodImage }} style={styles.momentsPreviewImg} />
+                  <TouchableOpacity style={styles.momentsImgRemove} onPress={() => setMoodImage(null)}>
+                    <MaterialIcons name="close" size={16} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               )}
-            </TouchableOpacity>
-            {moodImage && (
-              <TouchableOpacity style={styles.moodImageRemove} onPress={() => setMoodImage(null)}>
-                <Text style={styles.moodImageRemoveText}>移除图片</Text>
-              </TouchableOpacity>
-            )}
 
-            {/* Diary input */}
-            <TextInput
-              style={styles.modalInput}
-              multiline
-              placeholder="写下此刻的心情..."
-              placeholderTextColor={COLORS.outline}
-              value={moodDiary}
-              onChangeText={setMoodDiary}
-            />
-
-            {/* 今日记录 — 可展开子模块 */}
-            {moodEntries.length > 0 && (
-              <TouchableOpacity
-                style={styles.todayRecordsBtn}
-                onPress={() => setShowTodayRecords(!showTodayRecords)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.todayRecordsHeader}>
-                  <MaterialIcons name="history" size={16} color={COLORS.primary} />
-                  <Text style={styles.todayRecordsTitle}>今日记录 · {moodEntries.length} 条</Text>
-                  <MaterialIcons
-                    name={showTodayRecords ? 'expand-less' : 'expand-more'}
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {showTodayRecords && moodEntries.length > 0 && (
-              <ScrollView style={styles.todayRecordsScroll} showsVerticalScrollIndicator={false}>
-                {moodEntries.map((entry, idx) => (
-                  <View key={idx} style={styles.todayRecordItem}>
-                    <View style={styles.todayRecordHeader}>
-                      <Text style={styles.prevMoodEmoji}>
-                        {MOODS.find(m => m.key === entry.mood)?.emoji}
-                      </Text>
-                      <Text style={styles.prevMoodTime}>{entry.timestamp.slice(11, 19)}</Text>
-                    </View>
-                    <Text style={styles.todayRecordText}>{entry.diary}</Text>
-                    {entry.imageUri && (
-                      <Image source={{ uri: entry.imageUri }} style={styles.todayRecordImg} />
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => { setMoodVisible(false); setShowTodayRecords(false); }}>
-                <Text style={styles.modalBtnTextSecondary}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtnPrimary} onPress={handleSaveMood}>
-                <Text style={styles.modalBtnTextPrimary}>保存记录</Text>
-              </TouchableOpacity>
+              <View style={styles.momentsComposeActions}>
+                <TouchableOpacity style={styles.momentsAddImgBtn} onPress={pickMoodImage} activeOpacity={0.7}>
+                  <MaterialIcons name="add-photo-alternate" size={20} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.momentsSendBtn, !moodDiary.trim() && { opacity: 0.4 }]}
+                  onPress={handleSaveMood}
+                  disabled={!moodDiary.trim()}
+                >
+                  <Text style={styles.momentsSendText}>发布</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+
+            {/* 朋友圈 Feed */}
+            <ScrollView style={styles.momentsFeed} showsVerticalScrollIndicator={false}>
+              {moodEntries.length === 0 ? (
+                <View style={styles.momentsEmpty}>
+                  <MaterialIcons name="photo-camera" size={48} color={COLORS.outline} style={{ opacity: 0.3, marginBottom: 12 }} />
+                  <Text style={styles.momentsEmptyText}>还没有心情记录</Text>
+                  <Text style={styles.momentsEmptySub}>写下第一条吧～</Text>
+                </View>
+              ) : (
+                moodEntries.map((entry, idx) => {
+                  const mood = MOODS.find(m => m.key === entry.mood);
+                  return (
+                    <View key={idx} style={styles.momentsCard}>
+                      <View style={styles.momentsCardHeader}>
+                        <View style={[styles.momentsAvatar, { backgroundColor: (mood?.color || COLORS.outline) + '22' }]}>
+                          <Text style={styles.momentsAvatarEmoji}>{mood?.emoji || '😊'}</Text>
+                        </View>
+                        <View style={styles.momentsCardMeta}>
+                          <Text style={styles.momentsCardMood}>{mood?.label || '心情'}</Text>
+                          <Text style={styles.momentsCardTime}>{entry.timestamp.slice(11, 16)}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.momentsCardText}>{entry.diary}</Text>
+                      {entry.imageUri && (
+                        <Image source={{ uri: entry.imageUri }} style={styles.momentsCardImg} />
+                      )}
+                    </View>
+                  );
+                })
+              )}
+              <View style={{ height: 40 }} />
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1298,158 +1297,192 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Mood modal
-  moodRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: SPACING.md,
-    flexWrap: 'wrap',
-  },
-  moodChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: RADIUS.DEFAULT,
-    backgroundColor: COLORS.surfaceContainerLow,
-    gap: 4,
-  },
-  moodEmoji: {
-    fontSize: 16,
-  },
-  moodLabel: {
-    fontSize: 12,
-    fontFamily: FONT.medium,
-    color: COLORS.onSurfaceVariant,
-  },
-  modalInput: {
-    height: 100,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.DEFAULT,
-    padding: SPACING.md,
-    fontSize: 15,
-    fontFamily: FONT.regular,
-    color: COLORS.onSurface,
-    textAlignVertical: 'top',
-    marginBottom: SPACING.md,
-  },
-  // 配图
-  moodImageBtn: {
-    marginBottom: SPACING.sm,
-    borderRadius: RADIUS.DEFAULT,
-    overflow: 'hidden',
-  },
-  moodPreviewImg: {
-    width: '100%',
-    height: 160,
-    borderRadius: RADIUS.DEFAULT,
-    resizeMode: 'cover',
-  },
-  moodImagePlaceholder: {
-    height: 80,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.DEFAULT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    borderStyle: 'dashed',
-    gap: 4,
-  },
-  moodImageHint: {
-    fontSize: 12,
-    fontFamily: FONT.regular,
-    color: COLORS.outline,
-  },
-  moodImageRemove: {
-    alignItems: 'flex-end',
-    marginBottom: SPACING.sm,
-    marginTop: -4,
-  },
-  moodImageRemoveText: {
-    fontSize: 12,
-    color: COLORS.error,
-    fontFamily: FONT.medium,
-  },
-  // 今日记录子模块
-  todayRecordsBtn: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.DEFAULT,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  todayRecordsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  todayRecordsTitle: {
+  // 朋友圈风格心情弹窗
+  momentsOverlay: {
     flex: 1,
-    fontSize: 13,
-    fontFamily: FONT.semiBold,
-    color: COLORS.primary,
+    backgroundColor: COLORS.surfaceContainerLowest,
   },
-  todayRecordsScroll: {
-    maxHeight: 240,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.DEFAULT,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
+  momentsContainer: {
+    flex: 1,
+    paddingTop: 56,
   },
-  todayRecordItem: {
-    paddingVertical: 8,
+  momentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
-  todayRecordHeader: {
+  momentsTitle: {
+    fontSize: 19,
+    fontFamily: FONT.bold,
+    color: COLORS.onSurface,
+  },
+  // Compose
+  momentsCompose: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+    backgroundColor: '#fff',
+  },
+  momentsComposeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  momentsMoodRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flexWrap: 'wrap',
+    width: 72,
+  },
+  momentsMoodChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surfaceContainerLow,
+    gap: 2,
   },
-  todayRecordText: {
+  momentsMoodLabel: {
+    fontSize: 10,
+    fontFamily: FONT.medium,
+    color: COLORS.onSurfaceVariant,
+  },
+  moodEmoji: {
     fontSize: 14,
+  },
+  momentsInput: {
+    flex: 1,
+    fontSize: 15,
     fontFamily: FONT.regular,
     color: COLORS.onSurface,
-    lineHeight: 21,
+    paddingTop: 4,
+    minHeight: 40,
+    textAlignVertical: 'top',
   },
-  todayRecordImg: {
-    width: '100%',
-    height: 140,
+  momentsImgWrap: {
+    marginTop: SPACING.sm,
+    position: 'relative',
+    alignSelf: 'flex-start',
+    marginLeft: 82,
+  },
+  momentsPreviewImg: {
+    width: 120,
+    height: 90,
     borderRadius: RADIUS.sm,
     resizeMode: 'cover',
-    marginTop: 8,
   },
-  prevMoods: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.DEFAULT,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  prevMoodsTitle: {
-    fontSize: 12,
-    fontFamily: FONT.semiBold,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: 6,
-  },
-  prevMoodItem: {
-    flexDirection: 'row',
+  momentsImgRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
-    paddingVertical: 4,
-    gap: 6,
+    justifyContent: 'center',
   },
-  prevMoodEmoji: {
+  momentsComposeActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    paddingLeft: 82,
+  },
+  momentsAddImgBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.DEFAULT,
+    backgroundColor: COLORS.surfaceContainerLow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  momentsSendBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: RADIUS.DEFAULT,
+  },
+  momentsSendText: {
+    color: COLORS.onPrimary,
     fontSize: 14,
+    fontFamily: FONT.semiBold,
   },
-  prevMoodText: {
+  // Feed
+  momentsFeed: {
     flex: 1,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.sm,
+  },
+  momentsEmpty: {
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  momentsEmptyText: {
+    fontSize: 15,
+    fontFamily: FONT.medium,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+  },
+  momentsEmptySub: {
     fontSize: 13,
     fontFamily: FONT.regular,
-    color: COLORS.onSurfaceVariant,
-  },
-  prevMoodTime: {
-    fontSize: 11,
     color: COLORS.outline,
+    marginTop: 4,
+  },
+  momentsCard: {
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  momentsCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  momentsAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  momentsAvatarEmoji: {
+    fontSize: 20,
+  },
+  momentsCardMeta: {
+    flex: 1,
+  },
+  momentsCardMood: {
+    fontSize: 14,
+    fontFamily: FONT.semiBold,
+    color: COLORS.onSurface,
+  },
+  momentsCardTime: {
+    fontSize: 11,
+    fontFamily: FONT.regular,
+    color: COLORS.outline,
+    marginTop: 2,
+  },
+  momentsCardText: {
+    fontSize: 15,
+    fontFamily: FONT.regular,
+    color: COLORS.onSurface,
+    lineHeight: 23,
+    marginBottom: 6,
+  },
+  momentsCardImg: {
+    width: '100%',
+    height: 200,
+    borderRadius: RADIUS.sm,
+    resizeMode: 'cover',
+    marginTop: 4,
   },
   // Todo modal
   todoItem: {
