@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SPACING, SHADOWS, RADIUS, FONT, SCREEN_GRADIENT } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -44,6 +45,8 @@ export default function DiaryScreen() {
   const [selectedMood, setSelectedMood] = useState('happy');
   const [moodDiary, setMoodDiary] = useState('');
   const [moodEntries, setMoodEntries] = useState([]);
+  const [moodImage, setMoodImage] = useState(null);
+  const [showTodayRecords, setShowTodayRecords] = useState(false);
 
   // Todo list
   const [todoList, setTodoList] = useState([]);
@@ -161,6 +164,20 @@ export default function DiaryScreen() {
   };
 
   // ====== 心情日记 (Item 6) ======
+  const pickMoodImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+      if (!result.canceled) {
+        setMoodImage(result.assets[0].uri);
+      }
+    } catch (e) { /* cancelled */ }
+  };
+
   const handleSaveMood = async () => {
     if (!selectedDate || !moodDiary.trim()) return;
     const now = new Date();
@@ -169,9 +186,12 @@ export default function DiaryScreen() {
       mood: selectedMood,
       diary: moodDiary.trim(),
       timestamp,
+      imageUri: moodImage || null,
     });
     setMoodDiary('');
     setSelectedMood('happy');
+    setMoodImage(null);
+    setShowTodayRecords(false);
     setMoodVisible(false);
     loadMoodForDate(selectedDate);
   };
@@ -377,6 +397,7 @@ export default function DiaryScreen() {
               } else {
                 loadMoodForDate(selectedDate);
               }
+              setShowTodayRecords(false);
               setMoodVisible(true);
             }}
             activeOpacity={isTodaySelected ? 0.85 : 1}
@@ -386,7 +407,7 @@ export default function DiaryScreen() {
               <Text style={styles.infoCardTitle}>当下心情</Text>
             </View>
             <View style={styles.infoCardLabelRow}>
-              <Text style={styles.infoCardLabel}>{isTodaySelected ? '记录心情' : '仅当天可记'}</Text>
+              <Text style={styles.infoCardLabel}>{isTodaySelected ? '你的私人朋友圈' : '仅当天可记'}</Text>
               {isTodaySelected && <View style={styles.pulseDot} />}
             </View>
           </TouchableOpacity>
@@ -470,7 +491,7 @@ export default function DiaryScreen() {
       </Modal>
 
       {/* ====== 心情日记弹窗 (Item 6) ====== */}
-      <Modal visible={moodVisible} animationType="slide" transparent onRequestClose={() => setMoodVisible(false)}>
+      <Modal visible={moodVisible} animationType="slide" transparent onRequestClose={() => { setMoodVisible(false); setShowTodayRecords(false); }}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>当下心情</Text>
@@ -492,6 +513,23 @@ export default function DiaryScreen() {
               ))}
             </View>
 
+            {/* Image picker */}
+            <TouchableOpacity style={styles.moodImageBtn} onPress={pickMoodImage} activeOpacity={0.7}>
+              {moodImage ? (
+                <Image source={{ uri: moodImage }} style={styles.moodPreviewImg} />
+              ) : (
+                <View style={styles.moodImagePlaceholder}>
+                  <MaterialIcons name="add-photo-alternate" size={28} color={COLORS.outline} />
+                  <Text style={styles.moodImageHint}>添加图片</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            {moodImage && (
+              <TouchableOpacity style={styles.moodImageRemove} onPress={() => setMoodImage(null)}>
+                <Text style={styles.moodImageRemoveText}>移除图片</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Diary input */}
             <TextInput
               style={styles.modalInput}
@@ -502,24 +540,46 @@ export default function DiaryScreen() {
               onChangeText={setMoodDiary}
             />
 
-            {/* Previous entries for this date */}
+            {/* 今日记录 — 可展开子模块 */}
             {moodEntries.length > 0 && (
-              <View style={styles.prevMoods}>
-                <Text style={styles.prevMoodsTitle}>今日记录</Text>
+              <TouchableOpacity
+                style={styles.todayRecordsBtn}
+                onPress={() => setShowTodayRecords(!showTodayRecords)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.todayRecordsHeader}>
+                  <MaterialIcons name="history" size={16} color={COLORS.primary} />
+                  <Text style={styles.todayRecordsTitle}>今日记录 · {moodEntries.length} 条</Text>
+                  <MaterialIcons
+                    name={showTodayRecords ? 'expand-less' : 'expand-more'}
+                    size={20}
+                    color={COLORS.primary}
+                  />
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {showTodayRecords && moodEntries.length > 0 && (
+              <ScrollView style={styles.todayRecordsScroll} showsVerticalScrollIndicator={false}>
                 {moodEntries.map((entry, idx) => (
-                  <View key={idx} style={styles.prevMoodItem}>
-                    <Text style={styles.prevMoodEmoji}>
-                      {MOODS.find(m => m.key === entry.mood)?.emoji}
-                    </Text>
-                    <Text style={styles.prevMoodText} numberOfLines={2}>{entry.diary}</Text>
-                    <Text style={styles.prevMoodTime}>{entry.timestamp.slice(11, 19)}</Text>
+                  <View key={idx} style={styles.todayRecordItem}>
+                    <View style={styles.todayRecordHeader}>
+                      <Text style={styles.prevMoodEmoji}>
+                        {MOODS.find(m => m.key === entry.mood)?.emoji}
+                      </Text>
+                      <Text style={styles.prevMoodTime}>{entry.timestamp.slice(11, 19)}</Text>
+                    </View>
+                    <Text style={styles.todayRecordText}>{entry.diary}</Text>
+                    {entry.imageUri && (
+                      <Image source={{ uri: entry.imageUri }} style={styles.todayRecordImg} />
+                    )}
                   </View>
                 ))}
-              </View>
+              </ScrollView>
             )}
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setMoodVisible(false)}>
+              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => { setMoodVisible(false); setShowTodayRecords(false); }}>
                 <Text style={styles.modalBtnTextSecondary}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalBtnPrimary} onPress={handleSaveMood}>
@@ -669,7 +729,7 @@ export default function DiaryScreen() {
                           <MaterialIcons name="cloud-queue" size={16} color={COLORS.tertiary} />
                           <Text style={styles.detailCardTitle}>心情记录</Text>
                         </View>
-                        {moodEntries.slice(-5).map((entry, idx) => {
+                        {moodEntries.slice(-10).map((entry, idx) => {
                           const mood = MOODS.find(m => m.key === entry.mood);
                           return (
                             <View key={idx} style={styles.detailMoodRow}>
@@ -679,8 +739,13 @@ export default function DiaryScreen() {
                                   {mood?.label || entry.mood}
                                 </Text>
                               </View>
-                              <Text style={styles.detailMoodText} numberOfLines={2}>{entry.diary}</Text>
-                              <Text style={styles.detailMoodTime}>{entry.timestamp.slice(11, 16)}</Text>
+                              <View style={styles.detailMoodContent}>
+                                <Text style={styles.detailMoodText}>{entry.diary}</Text>
+                                {entry.imageUri && (
+                                  <Image source={{ uri: entry.imageUri }} style={styles.detailMoodImg} />
+                                )}
+                                <Text style={styles.detailMoodTime}>{entry.timestamp.slice(11, 16)}</Text>
+                              </View>
                             </View>
                           );
                         })}
@@ -1107,8 +1172,8 @@ const styles = StyleSheet.create({
   // Mood entries in detail
   detailMoodRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
+    alignItems: 'flex-start',
+    paddingVertical: 6,
     gap: 8,
   },
   detailMoodTag: {
@@ -1118,6 +1183,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: RADIUS.sm,
     gap: 3,
+    marginTop: 2,
   },
   detailMoodEmoji: {
     fontSize: 13,
@@ -1126,17 +1192,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: FONT.semiBold,
   },
-  detailMoodText: {
+  detailMoodContent: {
     flex: 1,
+  },
+  detailMoodText: {
     fontSize: 13,
     fontFamily: FONT.regular,
     color: COLORS.onSurfaceVariant,
     lineHeight: 19,
   },
+  detailMoodImg: {
+    width: '100%',
+    height: 120,
+    borderRadius: RADIUS.sm,
+    resizeMode: 'cover',
+    marginTop: 6,
+  },
   detailMoodTime: {
     fontSize: 10,
     color: COLORS.outline,
     fontFamily: FONT.regular,
+    marginTop: 4,
   },
   // FAB
   fab: {
@@ -1256,6 +1332,93 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     textAlignVertical: 'top',
     marginBottom: SPACING.md,
+  },
+  // 配图
+  moodImageBtn: {
+    marginBottom: SPACING.sm,
+    borderRadius: RADIUS.DEFAULT,
+    overflow: 'hidden',
+  },
+  moodPreviewImg: {
+    width: '100%',
+    height: 160,
+    borderRadius: RADIUS.DEFAULT,
+    resizeMode: 'cover',
+  },
+  moodImagePlaceholder: {
+    height: 80,
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: RADIUS.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderStyle: 'dashed',
+    gap: 4,
+  },
+  moodImageHint: {
+    fontSize: 12,
+    fontFamily: FONT.regular,
+    color: COLORS.outline,
+  },
+  moodImageRemove: {
+    alignItems: 'flex-end',
+    marginBottom: SPACING.sm,
+    marginTop: -4,
+  },
+  moodImageRemoveText: {
+    fontSize: 12,
+    color: COLORS.error,
+    fontFamily: FONT.medium,
+  },
+  // 今日记录子模块
+  todayRecordsBtn: {
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: RADIUS.DEFAULT,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  todayRecordsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  todayRecordsTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: FONT.semiBold,
+    color: COLORS.primary,
+  },
+  todayRecordsScroll: {
+    maxHeight: 240,
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: RADIUS.DEFAULT,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  todayRecordItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  todayRecordHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  todayRecordText: {
+    fontSize: 14,
+    fontFamily: FONT.regular,
+    color: COLORS.onSurface,
+    lineHeight: 21,
+  },
+  todayRecordImg: {
+    width: '100%',
+    height: 140,
+    borderRadius: RADIUS.sm,
+    resizeMode: 'cover',
+    marginTop: 8,
   },
   prevMoods: {
     backgroundColor: COLORS.surfaceContainerLow,
