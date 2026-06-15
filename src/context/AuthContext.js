@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const DEFAULT_NAME = '用户';
+
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
@@ -9,21 +11,20 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     AsyncStorage.getItem('@user').then((data) => {
-      if (data) setUser(JSON.parse(data));
+      if (data) {
+        setUser(JSON.parse(data));
+      } else {
+        const u = { name: DEFAULT_NAME };
+        AsyncStorage.setItem('@user', JSON.stringify(u));
+        setUser(u);
+      }
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      const u = { name: DEFAULT_NAME };
+      setUser(u);
+      setLoading(false);
+    });
   }, []);
-
-  const login = async (phone) => {
-    const u = { phone, name: '用户' + phone.slice(-4), registerDate: new Date().toISOString() };
-    await AsyncStorage.setItem('@user', JSON.stringify(u));
-    setUser(u);
-  };
-
-  const logout = async () => {
-    await AsyncStorage.removeItem('@user');
-    setUser(null);
-  };
 
   const updateName = async (name) => {
     const u = { ...user, name };
@@ -38,7 +39,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateName, updateAvatar, loading }}>
+    <AuthContext.Provider value={{ user, updateName, updateAvatar, loading }}>
       {children}
     </AuthContext.Provider>
   );

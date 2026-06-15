@@ -18,7 +18,7 @@ import {
 } from '../storage';
 
 export default function ProfileScreen() {
-  const { user, logout, updateName, updateAvatar } = useAuth();
+  const { user, updateName, updateAvatar } = useAuth();
   const { getSubscriptionStatus, pay } = useSubscription();
   const [nameEditing, setNameEditing] = useState(false);
   const [newName, setNewName] = useState('');
@@ -76,13 +76,6 @@ export default function ProfileScreen() {
   const handleRemoveGoal = async (goal) => {
     await removeGoal(goal);
     loadGoals();
-  };
-
-  const handleLogout = () => {
-    Alert.alert('确认退出', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
-      { text: '退出', style: 'destructive', onPress: () => logout() },
-    ]);
   };
 
   const handleFeedback = () => {
@@ -283,10 +276,6 @@ export default function ProfileScreen() {
           <MenuItem icon="library-books" label="使用记录" badge="12条记录" onPress={() => setReportVisible(true)} />
         </View>
 
-        {/* 退出登录 */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
-          <Text style={styles.logoutText}>退出账号</Text>
-        </TouchableOpacity>
       </View>
 
       {/* 月度报告弹窗 */}
@@ -661,19 +650,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.outlineVariant,
     marginHorizontal: 16,
     opacity: 0.3,
-  },
-  // 退出登录
-  logoutBtn: {
-    marginTop: SPACING.md,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: RADIUS.lg,
-    backgroundColor: 'rgba(186,26,26,0.06)',
-  },
-  logoutText: {
-    fontSize: 15,
-    fontFamily: FONT.medium,
-    color: COLORS.error,
   },
   // 弹窗
   modalOverlay: {
