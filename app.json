@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F7F5F0"
+      "backgroundColor": "#2A3630"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -21,12 +21,23 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#F7F5F0"
+        "backgroundColor": "#2A3630"
       },
-      "package": "com.yourcompany.calmtherapy"
+      "package": "com.yourcompany.calmtherapy",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "plugins": [
       "expo-audio"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a1b23c6e-aa8c-411b-b006-cd72da9bf23c"
+      }
+    }
   }
 }
