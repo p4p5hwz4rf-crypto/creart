@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, TextInput, Modal, Alert, Linking, Image,
+  View, Text, StyleSheet, TouchableOpacity,
+  TextInput, Modal, Alert, Linking, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,7 +17,7 @@ import {
   getMotto, saveMotto,
 } from '../storage';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen() {
   const { user, logout, updateName, updateAvatar } = useAuth();
   const { getSubscriptionStatus, pay } = useSubscription();
   const [nameEditing, setNameEditing] = useState(false);
@@ -153,7 +153,7 @@ export default function ProfileScreen({ navigation }) {
   return (
     <LinearGradient colors={SCREEN_GRADIENT} style={styles.container}>
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.scrollContent}>
         {/* 顶部 Blur Header */}
         <BlurView intensity={30} tint="light" style={styles.header}>
           <View style={styles.headerInner}>
@@ -183,7 +183,7 @@ export default function ProfileScreen({ navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.avatarImg}
                 >
-                  <MaterialIcons name="self-improvement" size={44} color={COLORS.primary} />
+                  <MaterialIcons name="self-improvement" size={40} color={COLORS.primary} />
                 </LinearGradient>
               )}
               <View style={styles.editBadge}>
@@ -191,6 +191,16 @@ export default function ProfileScreen({ navigation }) {
               </View>
             </View>
           </TouchableOpacity>
+
+          {userAvatarUri && (
+            <TouchableOpacity
+              style={styles.resetAvatarBtn}
+              onPress={() => updateAvatar(null)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.resetAvatarText}>恢复默认头像</Text>
+            </TouchableOpacity>
+          )}
 
           {nameEditing ? (
             <TextInput
@@ -266,8 +276,8 @@ export default function ProfileScreen({ navigation }) {
           <MenuItem
             icon="settings"
             label="订阅会员"
-            onPress={() => { if (!subStatus?.isActive) setPayVisible(true); }}
-            badge={subStatus?.isActive ? '已激活' : null}
+            onPress={() => setPayVisible(true)}
+            badge={subStatus?.isActive ? '已激活' : subStatus ? '待续费' : null}
           />
           <View style={styles.menuDivider} />
           <MenuItem icon="library-books" label="使用记录" badge="12条记录" onPress={() => setReportVisible(true)} />
@@ -277,7 +287,7 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
           <Text style={styles.logoutText}>退出账号</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {/* 月度报告弹窗 */}
       <Modal visible={reportVisible} animationType="slide" transparent>
@@ -310,26 +320,71 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* 付费弹窗 */}
-      <Modal visible={payVisible} animationType="slide" transparent>
+      {/* 订阅会员弹窗 */}
+      <Modal visible={payVisible} animationType="slide" transparent onRequestClose={() => setPayVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>解锁下月使用权</Text>
-            <Text style={styles.payDesc}>
-              {subStatus?.diaryCount >= 0
-                ? `本月已记录幸福小事 ${subStatus.diaryCount} 次，还差 ${Math.max(0, 20 - subStatus.diaryCount)} 次即可免费续费`
-                : '本月幸福小事记录不足20次'}
-            </Text>
-            <View style={styles.payPrice}>
-              <Text style={styles.payPriceText}>9.9</Text>
-              <Text style={styles.payPriceUnit}>元 / 月</Text>
-            </View>
-            <TouchableOpacity style={styles.modalPrimaryBtn} onPress={handlePay}>
-              <Text style={styles.modalPrimaryText}>立即支付</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalSecondaryBtn} onPress={() => setPayVisible(false)}>
-              <Text style={styles.modalSecondaryText}>稍后再说</Text>
-            </TouchableOpacity>
+            {(() => {
+              const reason = subStatus?.reason;
+              if (reason === '首月免费') {
+                return (
+                  <>
+                    <Text style={styles.modalTitle}>🎉 首月免费使用</Text>
+                    <Text style={styles.payDesc}>
+                      新用户首月免费畅享所有功能。{subStatus?.daysLeft > 0 ? `还剩 ${subStatus.daysLeft} 天，` : ''}坚持每天记录幸福小事，每月满勤 28 天即可继续免费使用。
+                    </Text>
+                    <TouchableOpacity style={styles.modalPrimaryBtn} onPress={() => setPayVisible(false)}>
+                      <Text style={styles.modalPrimaryText}>知道了</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              }
+              if (reason === '达标免续费') {
+                return (
+                  <>
+                    <Text style={styles.modalTitle}>✅ 满勤达标</Text>
+                    <Text style={styles.payDesc}>
+                      上月记录了 {subStatus.diaryCount} 天幸福小事，满勤达标！本月继续免费使用，继续保持哦～
+                    </Text>
+                    <TouchableOpacity style={styles.modalPrimaryBtn} onPress={() => setPayVisible(false)}>
+                      <Text style={styles.modalPrimaryText}>太好了</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              }
+              if (reason === '已付费') {
+                return (
+                  <>
+                    <Text style={styles.modalTitle}>✅ 本月已付费</Text>
+                    <Text style={styles.payDesc}>
+                      本月已解锁全部功能，尽情享受疗愈时光吧～
+                    </Text>
+                    <TouchableOpacity style={styles.modalPrimaryBtn} onPress={() => setPayVisible(false)}>
+                      <Text style={styles.modalPrimaryText}>知道了</Text>
+                    </TouchableOpacity>
+                  </>
+                );
+              }
+              // 未达标未付费
+              return (
+                <>
+                  <Text style={styles.modalTitle}>续费解锁</Text>
+                  <Text style={styles.payDesc}>
+                    上月记录了 {subStatus?.diaryCount || 0} 天幸福小事，未满 28 天。续费即可继续使用全部功能。
+                  </Text>
+                  <View style={styles.payPrice}>
+                    <Text style={styles.payPriceText}>9.9</Text>
+                    <Text style={styles.payPriceUnit}>元 / 月</Text>
+                  </View>
+                  <TouchableOpacity style={styles.modalPrimaryBtn} onPress={handlePay}>
+                    <Text style={styles.modalPrimaryText}>立即支付</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalSecondaryBtn} onPress={() => setPayVisible(false)}>
+                    <Text style={styles.modalSecondaryText}>稍后再说</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -371,9 +426,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flex: 1,
     paddingHorizontal: SPACING.containerMargin,
-    paddingTop: 80,
-    paddingBottom: 138,
+    paddingTop: 76,
+    paddingBottom: 100,
+    justifyContent: 'flex-start',
   },
   // 顶部 Header
   header: {
@@ -407,25 +464,19 @@ const styles = StyleSheet.create({
   // 头像区域
   profileHeader: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderRadius: RADIUS.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(79,122,100,0.08)',
-    padding: SPACING.lg,
-    marginBottom: SPACING.xl,
-    ...SHADOWS.figmaCard,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
   },
   avatarWrap: {
     position: 'relative',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   avatarImg: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 3,
     borderColor: COLORS.surfaceContainerHighest,
-    ...SHADOWS.figmaAvatar,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -443,13 +494,24 @@ const styles = StyleSheet.create({
     borderColor: COLORS.surfaceContainerLowest,
     ...SHADOWS.small,
   },
+  resetAvatarBtn: {
+    marginTop: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  resetAvatarText: {
+    fontSize: 12,
+    fontFamily: FONT.regular,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.6,
+  },
   name: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: FONT.semiBold,
     color: COLORS.onSurface,
   },
   nameInput: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: FONT.semiBold,
     color: COLORS.onSurface,
     borderBottomWidth: 1,
@@ -483,13 +545,13 @@ const styles = StyleSheet.create({
   },
   // 目标区域
   section: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
     fontSize: 12,
     fontFamily: FONT.medium,
     color: COLORS.secondary,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
     paddingLeft: SPACING.sm,
     textTransform: 'uppercase',
   },
@@ -551,13 +613,12 @@ const styles = StyleSheet.create({
     padding: 8,
     borderWidth: 1,
     borderColor: 'rgba(79,122,100,0.08)',
-    ...SHADOWS.figmaCard,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: RADIUS.lg,
   },
@@ -603,9 +664,9 @@ const styles = StyleSheet.create({
   },
   // 退出登录
   logoutBtn: {
-    marginTop: SPACING.xl,
+    marginTop: SPACING.md,
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: RADIUS.lg,
     backgroundColor: 'rgba(186,26,26,0.06)',
   },
@@ -696,17 +757,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 12,
     marginTop: SPACING.md,
-  },
-  modalInput: {
-    height: 120,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    fontSize: 15,
-    fontFamily: FONT.regular,
-    color: COLORS.onSurface,
-    textAlignVertical: 'top',
-    marginBottom: SPACING.md,
   },
   // 反馈弹窗 — 无浅色背景
   feedbackContent: {

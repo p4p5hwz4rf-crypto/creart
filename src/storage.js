@@ -92,21 +92,21 @@ export async function saveAvatarUri(uri) {
 }
 
 // ========== 今日待办 ==========
-export async function getTodoList() {
+export async function getTodoList(dateKey) {
   try {
-    const today = getTodayKey();
+    const key = dateKey || getTodayKey();
     const raw = await AsyncStorage.getItem('@todo_lists');
     const all = raw ? JSON.parse(raw) : {};
-    return all[today] || [];
+    return all[key] || [];
   } catch (e) { return []; }
 }
 
-export async function saveTodoList(items) {
+export async function saveTodoList(items, dateKey) {
   try {
-    const today = getTodayKey();
+    const key = dateKey || getTodayKey();
     const raw = await AsyncStorage.getItem('@todo_lists');
     const all = raw ? JSON.parse(raw) : {};
-    all[today] = items;
+    all[key] = items;
     await AsyncStorage.setItem('@todo_lists', JSON.stringify(all));
   } catch (e) { console.warn('保存待办失败', e); }
 }

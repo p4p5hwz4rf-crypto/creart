@@ -40,7 +40,7 @@ export function SubscriptionProvider({ children }) {
     const prefix = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
     const diaryCount = Object.keys(entries).filter(k => k.startsWith(prefix)).length;
 
-    if (diaryCount >= 20) {
+    if (diaryCount >= 28) {
       return { isActive: true, daysLeft: null, diaryCount, reason: '达标免续费' };
     }
 
